@@ -1,0 +1,41 @@
+:root {
+  color-scheme: light;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "SF Pro Display",
+    "Helvetica Neue",
+    Helvetica,
+    Arial,
+    sans-serif;
+  background: #d1d1d6;
+  background-image:
+    radial-gradient(at 20% 20%, rgba(255, 255, 255, 0.45) 0, transparent 45%),
+    radial-gradient(at 80% 10%, rgba(255, 255, 255, 0.35) 0, transparent 40%),
+    linear-gradient(165deg, #c7c7cc 0%, #d8d8dd 40%, #c5c5ca 100%);
+  color: #1d1d1f;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+a {
+  color: #007aff;
+}
+
+a:hover {
+  text-decoration: underline;
+}
