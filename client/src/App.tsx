@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { apiUrl } from "./apiOrigin.js";
 import { useRealtimeSession } from "./useRealtimeSession.js";
 import type { StreamEvent } from "./types.js";
 import "./App.css";
@@ -97,7 +98,7 @@ export function App() {
 
   const ensureSession = useCallback(async () => {
     if (sessionId) return sessionId;
-    const res = await fetch("/api/session", { method: "POST" });
+    const res = await fetch(apiUrl("/api/session"), { method: "POST" });
     if (!res.ok) throw new Error("Could not create session");
     const json = (await res.json()) as { session_id: string };
     setSessionId(json.session_id);
@@ -113,7 +114,7 @@ export function App() {
       try {
         const sid = await ensureSession();
         if (overrideQuery !== undefined) setQuery(overrideQuery);
-        const res = await fetch("/api/navigate", {
+        const res = await fetch(apiUrl("/api/navigate"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: sid, query: effective }),
@@ -142,7 +143,7 @@ export function App() {
       setTapPending(true);
       try {
         const sid = await ensureSession();
-        const res = await fetch("/api/tap", {
+        const res = await fetch(apiUrl("/api/tap"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

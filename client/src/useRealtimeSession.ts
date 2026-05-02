@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { apiUrl, apiWebSocketUrl } from "./apiOrigin.js";
 import type { StreamEvent } from "./types.js";
 
 type ConnectionMode = "sse" | "ws" | "both";
@@ -42,7 +43,7 @@ export function useRealtimeSession(sessionId: string | null, mode: ConnectionMod
     const useWs = mode === "ws" || mode === "both";
 
     if (useSse) {
-      const es = new EventSource(`/api/stream/${encodeURIComponent(sessionId)}`);
+      const es = new EventSource(apiUrl(`/api/stream/${encodeURIComponent(sessionId)}`));
       es.onopen = () => alive && setConnected(true);
       es.onerror = () => {
         if (!alive) return;
@@ -57,11 +58,7 @@ export function useRealtimeSession(sessionId: string | null, mode: ConnectionMod
     }
 
     if (useWs) {
-      const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const host = window.location.host;
-      const ws = new WebSocket(
-        `${proto}//${host}/api/ws?sessionId=${encodeURIComponent(sessionId)}`,
-      );
+      const ws = new WebSocket(apiWebSocketUrl(sessionId));
       ws.onopen = () => alive && setConnected(true);
       ws.onerror = () => {
         if (!alive) return;
