@@ -20,8 +20,6 @@ The **Generative UI Browser** implementation is a small Node + React app in **`c
 
 → **[Install, run, and configure](./circle-theme-browser/README.md)**
 
-This repo may contain other experiments next to that folder; to try **Generative UI Browser**, open **`circle-theme-browser`** first.
-
 ## License
 
 Add a `LICENSE` file when you’re ready to declare terms; none ships here by default.
