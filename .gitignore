@@ -2,6 +2,8 @@ node_modules/
 dist/
 .env
 **/.env
+.env.local
+**/.env.local
 .DS_Store
 
 # Standalone starter (own git repo); remove this line if you want it inside generative-browser.

@@ -1,5 +1,6 @@
 {
   "name": "generative-browser",
+  "description": "Generative image-first browser experiments (see circle-theme-browser).",
   "private": true,
   "workspaces": ["server", "client"],
   "scripts": {

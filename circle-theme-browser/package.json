@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Standalone themed image browser: initial prompt, then draw a circle to refine and regenerate.",
+  "description": "Search-style UI for full-frame AI images; sketch on the image to refine the next scene.",
   "scripts": {
     "dev": "concurrently -n server,client -c blue,magenta \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "tsx watch server/src/index.ts",
