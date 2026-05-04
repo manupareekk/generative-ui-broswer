@@ -10,6 +10,7 @@
     "dev:client": "vite --config client/vite.config.ts",
     "build": "tsc -p server/tsconfig.json && vite build --config client/vite.config.ts",
     "check": "npm run build && npm audit --audit-level=high",
+    "test:extract": "tsx scripts/test-json-extract.ts",
     "start": "node server/dist/index.js"
   },
   "dependencies": {

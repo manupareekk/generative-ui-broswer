@@ -129,6 +129,7 @@ app.post("/api/navigate", (req, res) => {
         type: "page",
         title: out.title,
         query: compiledQuery,
+        anchor_query: query.trim().slice(0, 400) || undefined,
         image_url: out.image_url,
         session_id,
         image_variants: out.image_variants,
@@ -166,6 +167,7 @@ app.post("/api/region", (req, res) => {
   }
 
   const themeBlock = themeFromBody(req.body);
+  const anchor_query = String(req.body?.anchor_query || "").trim().slice(0, 400);
 
   res.status(202).json({ ok: true });
 
@@ -177,13 +179,19 @@ app.post("/api/region", (req, res) => {
         detail: "Resolving what you sketched (vision → next prompt)",
       });
 
-      const { subject, next_query } = await resolveRegionIntent(image_url, page_query, themeBlock, {
-        cx_px,
-        cy_px,
-        r_px,
-        img_w,
-        img_h,
-      });
+      const { subject, next_query } = await resolveRegionIntent(
+        image_url,
+        page_query,
+        themeBlock,
+        {
+          cx_px,
+          cy_px,
+          r_px,
+          img_w,
+          img_h,
+        },
+        { anchorQuery: anchor_query || undefined },
+      );
 
       publish(session_id, {
         type: "region_resolved",
@@ -200,7 +208,10 @@ app.post("/api/region", (req, res) => {
         phase: "retrieve",
         detail: "Gathering lightweight web snippets for sketch focus",
       });
-      const snippets = await retrieveSnippets(page_query, subject);
+      // Search: circled subject is primary; anchor (user's search branch) is leading context (see retrieveSnippets join order).
+      const snippets = anchor_query.trim()
+        ? await retrieveSnippets(subject, anchor_query)
+        : await retrieveSnippets([page_query, subject].filter(Boolean).join(" — ").slice(0, 400));
       const digest = snippetsToDigest(snippets);
 
       publish(session_id, {
@@ -210,6 +221,7 @@ app.post("/api/region", (req, res) => {
       });
       const { compiledQuery, titleHint } = await compileRegionScene({
         pageQuery: page_query,
+        anchorQuery: anchor_query || undefined,
         subject,
         visionNextQuery: next_query,
         themeBlock,
@@ -254,6 +266,7 @@ app.post("/api/region", (req, res) => {
         type: "page",
         title: out.title,
         query: compiledQuery,
+        anchor_query: anchor_query || undefined,
         image_url: out.image_url,
         session_id,
         image_variants: out.image_variants,

@@ -136,6 +136,8 @@ export async function compileNavigateScene(input: {
 
 export async function compileRegionScene(input: {
   pageQuery: string;
+  /** Short user-typed query for this branch (e.g. "Japan"); keeps refine from drifting to unrelated places. */
+  anchorQuery?: string;
   subject: string;
   visionNextQuery: string;
   themeBlock: string;
@@ -151,8 +153,14 @@ export async function compileRegionScene(input: {
     };
   }
 
+  const anchor = (input.anchorQuery ?? "").trim();
+  const anchorBlock = anchor
+    ? `Original user search (stay in this world — combine with sketch subject):\n${anchor.slice(0, 400)}\n\n`
+    : "";
+
   const instruction =
     `You are a strict prompt compiler for an image model.\n` +
+    anchorBlock +
     `Previous page user intent:\n${input.pageQuery.slice(0, 2000)}\n\n` +
     `Vision model says the user sketched toward this subject:\n${input.subject.slice(0, 400)}\n\n` +
     `Vision model draft next-scene prompt (use as intent, but tighten):\n${input.visionNextQuery.slice(0, 4000)}\n\n` +
@@ -162,6 +170,7 @@ export async function compileRegionScene(input: {
     `{"scene_brief":"…","title_hint":"<=80 chars","allowed_labels":["<=12 words each","… up to 12 items"]}\n` +
     `Rules:\n` +
     `- The next image must be MOSTLY about the sketched subject (~70–90% of visual attention), with only light continuity from the prior page.\n` +
+    `- When an original user search is given above, scene_brief must stay in that scope (e.g. bullet trains *in Japan*), not an unrelated destination that only appeared as a small map label.\n` +
     `- Spell-check all words in scene_brief and allowed_labels.\n` +
     `- allowed_labels may include headlines, captions, and map labels; balance with photography/maps/icons.\n`;
 

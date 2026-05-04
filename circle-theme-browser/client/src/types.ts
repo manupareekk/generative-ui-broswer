@@ -15,6 +15,8 @@ export type StreamEvent =
       type: "page";
       title: string;
       query: string;
+      /** Same session branch: what the user typed last navigate (e.g. "Japan"). */
+      anchor_query?: string;
       image_url: string;
       session_id: string;
       image_variants?: Record<string, string>;

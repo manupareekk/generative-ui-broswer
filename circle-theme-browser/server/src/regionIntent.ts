@@ -49,6 +49,7 @@ export async function resolveRegionIntent(
   pageQuery: string,
   themeBlock: string,
   region: RegionCircle,
+  opts?: { anchorQuery?: string },
 ): Promise<{ subject: string; next_query: string }> {
   const { cx_px, cy_px, r_px, img_w, img_h } = region;
   const x = clamp01(cx_px / Math.max(1, img_w));
@@ -84,8 +85,15 @@ export async function resolveRegionIntent(
   const model = process.env.GEMINI_VISION_MODEL || "gemini-2.0-flash";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
+  const anchor = (opts?.anchorQuery ?? "").trim();
+  const anchorBlock = anchor
+    ? `**User search (short — keep subject + next image inside this scope):** ${anchor.slice(0, 400)}\n` +
+      `Do not jump to a different country, trip, or city unless the bitmap clearly centers that place; prefer combining this scope with what lies inside the sketch circle.\n\n`
+    : "";
+
   const instruction =
     `You are analyzing a generated image (full-frame bitmap).\n` +
+    anchorBlock +
     `Global theme (must carry forward): ${themeBlock.slice(0, 2500)}\n` +
     `Previous generation prompt / intent: ${pageQuery.slice(0, 2000)}\n\n` +
     `The user drew a **freehand pencil sketch** on this image; the client sends the **minimum circle** that encloses that sketch, in **pixel coordinates** ` +

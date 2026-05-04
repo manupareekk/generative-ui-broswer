@@ -4,10 +4,16 @@ import { SketchOverlay } from "./SketchOverlay.js";
 import type { StreamEvent } from "./types.js";
 import { useRealtimeSession } from "./useRealtimeSession.js";
 
-function latestPage(events: StreamEvent[]): { query: string; image_url: string; title: string } | null {
+function latestPage(events: StreamEvent[]): {
+  query: string;
+  image_url: string;
+  title: string;
+  anchor_query?: string;
+} | null {
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
-    if (e.type === "page") return { query: e.query, image_url: e.image_url, title: e.title };
+    if (e.type === "page")
+      return { query: e.query, image_url: e.image_url, title: e.title, anchor_query: e.anchor_query };
   }
   return null;
 }
@@ -155,6 +161,7 @@ export function App() {
       setPendingKind("region");
       setRegionBusy(true);
       try {
+        const anchor_query = (page.anchor_query ?? query.trim()).slice(0, 400);
         const res = await fetch(apiUrl("/api/region"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -162,6 +169,7 @@ export function App() {
             session_id: sessionId,
             image_url: page.image_url,
             page_query: page.query,
+            anchor_query,
             client_trace,
             ...region,
           }),
@@ -188,7 +196,7 @@ export function App() {
         setPendingKind(null);
       }
     },
-    [page, sessionId],
+    [page, query, sessionId],
   );
 
   const locked = genPending || regionBusy;

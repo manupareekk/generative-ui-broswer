@@ -15,6 +15,8 @@ export type StreamEvent =
       type: "page";
       title: string;
       query: string;
+      /** Short text the user typed to start this branch (e.g. "Japan"); used for sketch retrieval, not the long compiled prompt in `query`. */
+      anchor_query?: string;
       image_url: string;
       session_id: string;
       image_variants?: Record<string, string>;
