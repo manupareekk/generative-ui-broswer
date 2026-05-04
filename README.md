@@ -1,6 +1,8 @@
-# generative-ui-browser
+# Generative UI Browser
 
-**Generative UI browser** — a search-style flow where each “page” is a full image you sketch to explore. This repository is the **generative-ui-browser** project; the app you run lives in the **`circle-theme-browser/`** folder (historical path name).
+**Generative UI Browser** — a search-style flow where each “page” is a full image you tap or sketch to explore. This repository hosts that project; the app you run lives in the **`circle-theme-browser/`** folder (historical path name).
+
+<video src="circle-theme-browser/docs/demo.mp4" controls playsinline muted preload="metadata" width="100%"></video>
 
 ## Where this fits
 
@@ -10,11 +12,11 @@ This project is a small take on what often comes **next**: the **whole screen ca
 
 In short: **search in, picture out, sketch to go deeper.** Same habit as looking something up, different material than links and paragraphs.
 
-The **generative-ui-browser** implementation is a small Node + React app in **`circle-theme-browser/`** (plug in Gemini or OpenAI for real images, or run without keys to see placeholders).
+The **Generative UI Browser** implementation is a small Node + React app in **`circle-theme-browser/`** (plug in Gemini or OpenAI for real images, or run without keys to see placeholders).
 
 → **[Install, run, and configure](./circle-theme-browser/README.md)**
 
-This repo may contain other experiments next to that folder; to try **generative-ui-browser**, open **`circle-theme-browser`** first.
+This repo may contain other experiments next to that folder; to try **Generative UI Browser**, open **`circle-theme-browser`** first.
 
 ## Security
 

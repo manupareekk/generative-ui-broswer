@@ -1,8 +1,8 @@
-# generative-ui-browser
+# Generative UI Browser
 
 ## What you’re running
 
-This folder (`circle-theme-browser` in the monorepo) is the **generative-ui-browser** app: a **single search bar** and a **full-frame image** underneath. You describe what you want to see (like you’d type a search), press go, and the “answer” isn’t a list of links—it’s **one picture** meant to carry the idea.
+This folder (`circle-theme-browser` in the monorepo) is the **Generative UI Browser** app: a **single search bar** and a **full-frame image** underneath. You describe what you want to see (like you’d type a search), press go, and the “answer” isn’t a list of links—it’s **one picture** meant to carry the idea.
 
 **What’s new compared to typical generative UI?**  
 Instead of AI living *inside* classic layout components, the **page itself is the output**. To move forward, you **sketch on the image**—roughly circling or looping the part you care about—and the app asks the model to **continue from that place**. You’re navigating **through** the image, not through menus.
@@ -15,13 +15,7 @@ So the loop is simple:
 
 Under the hood it’s an **Express** API plus a **Vite + React** client, with **live updates over SSE** while images are prepared. With API keys set, it uses **Gemini** for images (and vision for your sketch); without keys you still get a **stub preview** so the UI is testable.
 
----
-
-## Demo
-
-<video src="docs/demo.mp4" controls playsinline muted preload="metadata" width="100%"></video>
-
-Screen recording: **`docs/demo.mp4`** (~5 MB). Replace that file to update the demo; GitHub renders `<video>` in READMEs. Viewers can unmute in the player if the clip has sound.
+**Demo:** the screen recording is embedded on the [repository home README](../README.md) (source file: **`docs/demo.mp4`** in this folder).
 
 ---
 
