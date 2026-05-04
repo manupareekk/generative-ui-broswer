@@ -2,9 +2,11 @@
 
 **Generative UI Browser** — a search-style flow where each “page” is a full image you tap or sketch to explore. This repository hosts that project; the app you run lives in the **`circle-theme-browser/`** folder (historical path name).
 
-<video src="https://cdn.jsdelivr.net/gh/manupareekk/generative-ui-browser@main/circle-theme-browser/docs/demo.mp4" controls playsinline muted preload="metadata" width="100%"></video>
+## Demo
 
-**[Open demo video](./circle-theme-browser/docs/demo.mp4)** — same file in the repo (GitHub’s `raw.githubusercontent.com` URL serves MP4 as `application/octet-stream`, so many browsers refuse to play it inside `<video>`; this embed uses jsDelivr, which sends `video/mp4`).
+![Generative UI Browser screen recording](circle-theme-browser/docs/demo.gif)
+
+Preview (~18s, silent GIF). **Full demo with audio:** [demo.mp4](./circle-theme-browser/docs/demo.mp4) — open or download from the repo.
 
 ## Where this fits
 
@@ -19,11 +21,6 @@ The **Generative UI Browser** implementation is a small Node + React app in **`c
 → **[Install, run, and configure](./circle-theme-browser/README.md)**
 
 This repo may contain other experiments next to that folder; to try **Generative UI Browser**, open **`circle-theme-browser`** first.
-
-## Security
-
-- **Never commit API keys.** Keep them in a local `.env` file (ignored by git). Start from `.env.example` and add your own values.
-- If a key was ever shared or checked in by mistake, **rotate it** in [Google AI Studio](https://aistudio.google.com/apikey) or your OpenAI account.
 
 ## License
 

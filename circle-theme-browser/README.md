@@ -15,7 +15,7 @@ So the loop is simple:
 
 Under the hood it’s an **Express** API plus a **Vite + React** client, with **live updates over SSE** while images are prepared. With API keys set, it uses **Gemini** for images (and vision for your sketch); without keys you still get a **stub preview** so the UI is testable.
 
-**Demo:** the screen recording is embedded on the [repository home README](../README.md) (source file: **`docs/demo.mp4`** in this folder).
+**Demo:** animated preview and links on the [repository home README](../README.md). Source files in this folder: **`docs/demo.gif`**, **`docs/demo.mp4`**.
 
 ---
 
@@ -86,10 +86,3 @@ Builds everything and runs `npm audit` (fails on high or critical issues).
 | `CIRCLE_BROWSER_PORT` | API port (default `3020`) |
 
 Advanced: you can send `theme_preset` and `theme_custom` in API bodies—see `server/src/themes.ts`.
-
----
-
-## Security
-
-- Only **`.env.example`** belongs in git (empty placeholders). Your real **`.env`** stays on your machine.
-- Keys are never baked into the source; they’re read when the server runs.
