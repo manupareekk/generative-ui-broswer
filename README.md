@@ -1,28 +1,15 @@
 # Generative UI browser
 
-Monorepo for experiments in **generative, image-first browsing**: type a prompt, get a full-frame image, then **sketch regions** to refine the next scene—no traditional page chrome.
+Turn a short prompt into a **full-screen picture**, then **draw on the image** to explore deeper—like following curiosity instead of clicking links. The main app lives in **`circle-theme-browser/`** (Node + React; optional Gemini or OpenAI for real images).
 
-## Main app: `circle-theme-browser/`
+→ **[How to run it](./circle-theme-browser/README.md)**
 
-Standalone Node + React app: search-style box, server-side prompt assembly (theme + holistic rules + your query), **Gemini** or **OpenAI** image generation, **SSE** progress, and **pencil-sketch** refinement over the image.
-
-→ **[Run instructions and architecture](./circle-theme-browser/README.md)**
-
-Other folders in this repo may be prototypes or older experiments; treat **`circle-theme-browser`** as the primary documented surface.
+Older or experimental code may live alongside that folder; start with **`circle-theme-browser`** if you just want to try the experience.
 
 ## Security
 
-- **Never commit API keys.** Use `.env` locally (gitignored). Copy only `.env.example` and fill in blanks.
-- If a key was ever pasted into chat or committed, **rotate it** in [Google AI Studio](https://aistudio.google.com/apikey) or your OpenAI dashboard.
-- This repository should only contain **empty** `GEMINI_API_KEY=` / `OPENAI_API_KEY=` placeholders in `.env.example` files.
-
-## GitHub “About” description (copy-paste)
-
-Use this as the repository **Description** on GitHub → *Settings* or the gear next to “About”:
-
-> Image-first generative browser: search a scene, sketch to refine. Node + React + Gemini/OpenAI. Keys via `.env` only.
-
-**Topics / tags (suggested):** `generative-ui`, `gemini`, `image-generation`, `react`, `typescript`, `sse`, `vite`
+- **Never commit API keys.** Use a local `.env` (gitignored). Copy `.env.example` and add your own keys.
+- If a key was ever exposed, **rotate it** in [Google AI Studio](https://aistudio.google.com/apikey) or your OpenAI account.
 
 ## License
 
