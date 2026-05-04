@@ -1,7 +1,7 @@
 /** Preset style blocks prepended to every image prompt (and region resolution). */
 export const THEME_PRESETS: Record<string, string> = {
   clean:
-    "Style: Modern search-and-discovery look — bright, crisp, trustworthy: airy whites and soft neutrals, gentle depth and shadows, clear visual hierarchy like a top-tier answer surface (not a literal SERP screenshot, not fake URL bars or browser chrome). Contemporary, informational, and scannable; several distinct regions worth sketching next (answer cards, maps, callouts, diagrams, in-image labels as painted pixels). Avoid medieval, parchment, or storybook fantasy unless the query explicitly asks. Full-frame 16:9 landscape; cohesive lighting across frames.",
+    "Style: Modern search-and-discovery look — bright, crisp, trustworthy: airy whites and soft neutrals, gentle depth and shadows, clear visual hierarchy like a top-tier answer surface (not a literal SERP screenshot, not fake URL bars or browser chrome). Prefer photography, maps, icons, and simple diagrams; avoid dense on-image typography unless the scene request explicitly lists a few short labels. Full-frame 16:9 landscape; cohesive lighting across frames.",
   retro_mac:
     "Visual theme: early-90s beige Macintosh aesthetic — chunky pixels, Chicago/Geneva vibe, 1-bit dither hints, warm CRT cast. Full-frame 16:9 landscape illustration.",
   watercolor:

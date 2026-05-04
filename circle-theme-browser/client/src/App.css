@@ -159,12 +159,17 @@ body {
   position: relative;
   width: 100%;
   flex: 1;
+  min-height: 0;
   margin: 0;
   padding: 0;
   border: none;
   border-radius: 0;
   box-shadow: none;
   outline: none;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .error-banner {
@@ -271,7 +276,10 @@ body {
 .stage img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
   vertical-align: top;
   margin: 0;
   padding: 0;

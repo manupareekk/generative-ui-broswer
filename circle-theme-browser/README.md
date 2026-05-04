@@ -60,6 +60,15 @@ Builds everything and runs `npm audit` (fails on high or critical issues).
 
 ---
 
+## Server pipeline (what happens on each request)
+
+1. **Retrieve** — Fetches a few web snippets for grounding (Brave if `BRAVE_SEARCH_API_KEY` is set, otherwise DuckDuckGo instant answer + related topics).
+2. **Compile** — Gemini text (`GEMINI_COMPILER_MODEL`, default `gemini-2.0-flash`) turns your query (and retrieval digest) into a **strict scene brief**, optional **spell-checked labels** (max 8 words each), and minimal-text rules.
+3. **Vision (sketch only)** — Interprets the sketched region → draft `next_query`.
+4. **Render** — Gemini image model gets the compiled brief + **reference images** on sketch refine: the **full previous frame** plus a **square crop** around your sketch (for continuity + click relevance). Initial search has no references.
+
+---
+
 ## Environment variables
 
 | Variable | What it’s for |
@@ -69,6 +78,9 @@ Builds everything and runs `npm audit` (fails on high or critical issues).
 | `OPENAI_API_KEY` | Optional fallback images if Gemini isn’t configured |
 | `GEMINI_IMAGE_MODEL` | Default `gemini-2.5-flash-image` |
 | `GEMINI_VISION_MODEL` | Default `gemini-2.0-flash` |
+| `GEMINI_COMPILER_MODEL` | Default `gemini-2.0-flash` (scene “compiler” JSON step) |
+| `BRAVE_SEARCH_API_KEY` | Optional: richer retrieval than DuckDuckGo alone |
+| `RETRIEVAL_TOP_N` | Max snippets to fold into the digest (default `8`) |
 | `CIRCLE_BROWSER_PORT` | API port (default `3020`) |
 
 Advanced: you can send `theme_preset` and `theme_custom` in API bodies—see `server/src/themes.ts`.

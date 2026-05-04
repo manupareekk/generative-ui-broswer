@@ -3,8 +3,12 @@ import crypto from "node:crypto";
 import express from "express";
 import cors from "cors";
 import { publish, subscribe, type StreamEvent } from "./bus.js";
+import type { ReferenceImage } from "./ai.js";
+import { compileNavigateScene, compileRegionScene } from "./compileScene.js";
 import { generatePage } from "./ai.js";
+import { cropSquareAround, loadImageBufferFromUrl, toPngReference } from "./imageRef.js";
 import { resolveRegionIntent } from "./regionIntent.js";
+import { retrieveSnippets, snippetsToDigest } from "./retrieveWeb.js";
 import { DEFAULT_THEME_KEY, resolveThemeBlock, THEME_PRESETS } from "./themes.js";
 
 const PORT = Number(process.env.CIRCLE_BROWSER_PORT || process.env.PORT || 3020);
@@ -30,6 +34,7 @@ app.get("/api/health", (_req, res) => {
     ok: true,
     service: "generative-ui-browser",
     gemini_image_configured: geminiConfigured(),
+    brave_search_configured: Boolean(process.env.BRAVE_SEARCH_API_KEY?.trim()),
   });
 });
 
@@ -88,10 +93,30 @@ app.post("/api/navigate", (req, res) => {
 
   void (async () => {
     try {
+      publish(session_id, {
+        type: "phase",
+        phase: "retrieve",
+        detail: "Gathering lightweight web snippets for your query",
+      });
+      const snippets = await retrieveSnippets(query);
+      const digest = snippetsToDigest(snippets);
+
+      publish(session_id, {
+        type: "phase",
+        phase: "compile",
+        detail: "Compiling scene brief + spell-checked labels",
+      });
+      const { compiledQuery, titleHint } = await compileNavigateScene({
+        userQuery: query,
+        themeBlock,
+        retrievalDigest: digest,
+      });
+
       const out = await generatePage({
-        query,
+        query: compiledQuery,
         themeBlock,
         sessionId: session_id,
+        titleHint,
         onPhase: (phase, detail) => {
           publish(session_id, { type: "phase", phase, detail });
         },
@@ -103,7 +128,7 @@ app.post("/api/navigate", (req, res) => {
       publish(session_id, {
         type: "page",
         title: out.title,
-        query,
+        query: compiledQuery,
         image_url: out.image_url,
         session_id,
         image_variants: out.image_variants,
@@ -172,14 +197,51 @@ app.post("/api/region", (req, res) => {
 
       publish(session_id, {
         type: "phase",
+        phase: "retrieve",
+        detail: "Gathering lightweight web snippets for sketch focus",
+      });
+      const snippets = await retrieveSnippets(page_query, subject);
+      const digest = snippetsToDigest(snippets);
+
+      publish(session_id, {
+        type: "phase",
+        phase: "compile",
+        detail: "Compiling next scene + spell-checked labels",
+      });
+      const { compiledQuery, titleHint } = await compileRegionScene({
+        pageQuery: page_query,
+        subject,
+        visionNextQuery: next_query,
+        themeBlock,
+        retrievalDigest: digest,
+      });
+
+      publish(session_id, {
+        type: "phase",
         phase: "render",
         detail: "Generating next image from sketched region",
       });
 
+      let referenceImages: ReferenceImage[] | undefined;
+      if (geminiConfigured()) {
+        try {
+          const buf = await loadImageBufferFromUrl(image_url);
+          const full = await toPngReference(buf, 1536);
+          const cropBuf = await cropSquareAround(buf, cx_px, cy_px, r_px);
+          const crop = await toPngReference(cropBuf, 1024);
+          referenceImages = [full, crop];
+        } catch (e) {
+          console.error("[generative-ui-browser] reference images:", e);
+          referenceImages = undefined;
+        }
+      }
+
       const out = await generatePage({
-        query: next_query,
+        query: compiledQuery,
         themeBlock,
         sessionId: session_id,
+        titleHint,
+        referenceImages,
         onPhase: (phase, detail) => {
           publish(session_id, { type: "phase", phase, detail });
         },
@@ -191,7 +253,7 @@ app.post("/api/region", (req, res) => {
       publish(session_id, {
         type: "page",
         title: out.title,
-        query: next_query,
+        query: compiledQuery,
         image_url: out.image_url,
         session_id,
         image_variants: out.image_variants,

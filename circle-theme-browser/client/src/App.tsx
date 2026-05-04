@@ -262,7 +262,7 @@ export function App() {
             <p className="empty-title">Start with a description</p>
             <p className="empty-body">
               Type what you want to see, submit, then <strong>sketch on the image</strong> with your pointer to zoom or branch
-              the story. ⌘↵ or Ctrl+↵ also submits.
+              the story.
             </p>
           </div>
         ) : null}

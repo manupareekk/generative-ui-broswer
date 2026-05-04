@@ -1,22 +1,9 @@
-function geminiApiKey(): string | null {
-  return (
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    null
-  );
-}
+import { geminiApiKey } from "./geminiKey.js";
+import { extractJsonObject } from "./jsonExtract.js";
 
 function clamp01(n: number): number {
   if (Number.isNaN(n)) return 0;
   return Math.min(1, Math.max(0, n));
-}
-
-function extractJsonObject(text: string): unknown {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) throw new Error("No JSON object found");
-  return JSON.parse(text.slice(start, end + 1)) as unknown;
 }
 
 async function dataUrlToBase64(dataUrl: string): Promise<{ mime: string; data: string }> {
@@ -75,9 +62,11 @@ export async function resolveRegionIntent(
       `Previous image intent: ${pageQuery.slice(0, 1200)}\n` +
       `The user pencil-sketched an area on that image; we summarize it as a circle: center ≈ (${Math.round(x * 100)}%, ${Math.round(y * 100)}%) ` +
       `of the frame, radius ≈ ${(rNorm * 100).toFixed(1)}% of the shorter side.\n` +
-      `Generate ONE new full-frame image that continues the story: zoom into, open, or reveal what that sketch targeted — ` +
-      `same world and theme, holistic and coherent (not a pasted SERP collage). Several scannable regions that feel like modern search-style discovery (clear panels, highlights, maps, labels as pixels) for tap/sketch next steps; ` +
-      `no scrollbars, no nested scroll UI, no fake browser chrome around the art unless the user explicitly wanted a device screen.`,
+      `Generate ONE new full-frame image that continues the story: zoom into, open, or reveal what that sketch targeted. ` +
+      `Composition priority: about 75% of the frame should be about the sketched subject/area, and about 25% can preserve context from the previous page so continuity remains clear. ` +
+      `Keep the same world and theme, modern search-style discovery, and coherent structure (not a pasted SERP collage). ` +
+      `Prefer short, legible labels only when helpful and avoid long blocks of tiny text to reduce spelling artifacts. ` +
+      `No scrollbars, no nested scroll UI, no fake browser chrome around the art unless the user explicitly wanted a device screen.`,
   };
 
   const apiKey = geminiApiKey();
@@ -108,7 +97,9 @@ export async function resolveRegionIntent(
     `{"subject":"short phrase naming what they sketched toward","next_query":"one detailed prompt for an image model to render the NEXT full-frame image after focusing on that region"}\n` +
     `next_query must be self-contained and must include the same visual theme constraints; describe the new scene to synthesize (do not say "the previous image"). ` +
     `next_query must also: (1) synthesize holistically what that subject implies in context (like a rounded "top results" understanding, one coherent scene), ` +
-    `(2) favor multiple plausible objects, regions, or in-image text areas the user could tap/sketch next (not a lone minimalist hero unless the brief requires it), and (3) forbid scrollbars, feed-scroll metaphors, and fake browser/OS framing unless the original user intent explicitly required a realistic screen.`;
+    `(2) make the next image mostly about the sketched region (roughly 70-85% of frame focus) while retaining limited context from the prior scene (roughly 15-30%) for continuity, ` +
+    `(3) favor multiple plausible objects or regions the user could tap/sketch next, and (4) avoid heavy text density; if text appears, keep it short and legible to reduce spelling errors, ` +
+    `and (5) forbid scrollbars, feed-scroll metaphors, and fake browser/OS framing unless the original user intent explicitly required a realistic screen.`;
 
   const res = await fetch(url, {
     method: "POST",

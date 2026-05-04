@@ -1,8 +1,16 @@
+import { geminiApiKey } from "./geminiKey.js";
+
+export type ReferenceImage = { mimeType: string; dataBase64: string };
+
 export type GenerateInput = {
   query: string;
   /** Prepended to every provider prompt so all frames share one visual theme. */
   themeBlock: string;
   sessionId: string;
+  /** Overrides title derived from query (e.g. short subject from compiler). */
+  titleHint?: string;
+  /** Optional reference bitmaps for Gemini image conditioning (full frame + crop). */
+  referenceImages?: ReferenceImage[];
   onPhase: (phase: string, detail?: string) => void;
   onProgress: (value: number) => void;
 };
@@ -20,8 +28,8 @@ function sleep(ms: number): Promise<void> {
 /** Prepended to every image brief (navigate + region). Not literal web search — steers the model toward a rounded synthesis. */
 const HOLISTIC_FRAME_RULES =
   "Holistic topic synthesis: Treat the user's text like a search query. Render ONE coherent full-frame scene that merges the main themes, entities, and settings a careful reader would expect from strong first-page-style sources—one unified world, not unrelated snippets, not a pasted collage of SERP thumbnails.\n\n" +
-  "Interaction & layout: The vibe is modern discovery (search-engine clarity without simulating a browser): tap/sketch explores the image; compose several clear, scannable regions—highlights, panels, maps, figures, or short in-image labels—that feel like trustworthy answers, not a single tiny hero. Stay contemporary and bright; avoid medieval, ornate manuscript, or fairytale styling unless the query requires it. Do NOT depict scrollbars, infinite feeds, fake OS window chrome, or address bars unless the user explicitly asked for a realistic device screen.\n\n" +
-  "When text helps communicate, render it as part of the bitmap (legible when reasonable); avoid gratuitous tiny illegible filler.";
+  "Interaction & layout: The vibe is modern discovery (search-engine clarity without simulating a browser): tap/sketch explores the image; compose several clear, scannable regions—highlights, panels, maps, figures, or tiny iconography—that feel like trustworthy answers, not a single tiny hero. Stay contemporary and bright; avoid medieval, ornate manuscript, or fairytale styling unless the query requires it. Do NOT depict scrollbars, infinite feeds, fake OS window chrome, or address bars unless the user explicitly asked for a realistic device screen.\n\n" +
+  "Typography: default to **no on-image text**. If text is essential, use at most a few large words from the allowed-label list in the scene request; otherwise rely on photography, maps, icons, and diagrams. Avoid paragraphs, captions, itineraries, and dense UI lettering to reduce misspellings.";
 
 function combinePrompt(themeBlock: string, userQuery: string): string {
   const t = themeBlock.trim();
@@ -84,15 +92,6 @@ function svgPage(title: string, query: string, themeHint: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-function geminiApiKey(): string | null {
-  return (
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    null
-  );
-}
-
 type GeminiPart = {
   text?: string;
   inlineData?: { mimeType?: string; data?: string };
@@ -110,19 +109,37 @@ function firstInlineImageDataUrl(parts: GeminiPart[] | undefined): string | null
   return null;
 }
 
-async function geminiImage(fullPrompt: string, onProgress: (n: number) => void): Promise<string> {
+async function geminiImage(
+  fullPrompt: string,
+  onProgress: (n: number) => void,
+  referenceImages?: ReferenceImage[],
+): Promise<string> {
   const apiKey = geminiApiKey();
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
 
   const model = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
   onProgress(50);
 
-  const prompt =
+  const lead =
     `Create ONE polished, high-resolution image that matches the following brief.\n` +
-    `Output only the final artwork — no caption, no border, no browser window, no scrollbar chrome, no explanatory panels around it.\n\n` +
-    fullPrompt.slice(0, 8000);
+    `Output only the final artwork — no caption, no border, no browser window, no scrollbar chrome, no explanatory panels around it.\n` +
+    (referenceImages?.length
+      ? `Reference image(s) are attached: preserve continuity (palette, lighting, materials, world) with the prior frame; if two images are present, the second is a zoomed crop of what the user sketched—make that the primary focus while staying coherent.\n\n`
+      : "\n");
+
+  const prompt = `${lead}${fullPrompt.slice(0, 7500)}`;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+
+  const parts: GeminiPart[] = [];
+  if (referenceImages?.length) {
+    for (const ref of referenceImages) {
+      parts.push({
+        inlineData: { mimeType: ref.mimeType, data: ref.dataBase64 },
+      });
+    }
+  }
+  parts.push({ text: prompt });
 
   const res = await fetch(url, {
     method: "POST",
@@ -134,7 +151,7 @@ async function geminiImage(fullPrompt: string, onProgress: (n: number) => void):
       contents: [
         {
           role: "user",
-          parts: [{ text: prompt }],
+          parts,
         },
       ],
       generationConfig: {
@@ -159,8 +176,8 @@ async function geminiImage(fullPrompt: string, onProgress: (n: number) => void):
 
   if (json.error?.message) throw new Error(json.error.message);
 
-  const parts = json.candidates?.[0]?.content?.parts;
-  const dataUrl = firstInlineImageDataUrl(parts);
+  const partsOut = json.candidates?.[0]?.content?.parts;
+  const dataUrl = firstInlineImageDataUrl(partsOut);
   if (!dataUrl) throw new Error("Gemini response contained no inline image data");
   onProgress(92);
   return dataUrl;
@@ -201,9 +218,9 @@ async function openaiImage(fullPrompt: string, onProgress: (n: number) => void):
 }
 
 export async function generatePage(input: GenerateInput): Promise<GenerateOutput> {
-  const { query, themeBlock, onPhase, onProgress } = input;
+  const { query, themeBlock, titleHint, referenceImages, onPhase, onProgress } = input;
   const fullPrompt = combinePrompt(themeBlock, query);
-  const title = query.trim().slice(0, 80) || "Untitled";
+  const title = (titleHint ?? query).trim().slice(0, 80) || "Untitled";
 
   onPhase("parse", "Applying theme + brief");
   onProgress(5);
@@ -220,7 +237,7 @@ export async function generatePage(input: GenerateInput): Promise<GenerateOutput
   let image_url: string;
   try {
     if (geminiApiKey()) {
-      image_url = await geminiImage(fullPrompt, onProgress);
+      image_url = await geminiImage(fullPrompt, onProgress, referenceImages);
     } else if (process.env.OPENAI_API_KEY) {
       image_url = await openaiImage(fullPrompt, onProgress);
     } else {
