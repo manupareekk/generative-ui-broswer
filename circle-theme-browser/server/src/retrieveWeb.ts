@@ -34,7 +34,12 @@ async function braveSearch(q: string, limit: number): Promise<WebSnippet[]> {
 
 async function duckDuckGoInstant(q: string, limit: number): Promise<WebSnippet[]> {
   const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(q)}&format=json&no_html=1&skip_disambig=1`;
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "generative-ui-browser/1.0 (+https://github.com/manupareekk/generative-ui-browser)",
+    },
+  });
   if (!res.ok) return [];
 
   const json = (await res.json()) as {
@@ -81,7 +86,23 @@ export async function retrieveSnippets(userQuery: string, clickSubject?: string)
   const brave = await braveSearch(q, n);
   if (brave.length) return brave;
 
-  return duckDuckGoInstant(q, n);
+  let ddg = await duckDuckGoInstant(q, n);
+  if (ddg.length) return ddg;
+
+  // DuckDuckGo often returns empty RelatedTopics for long compound queries; retry shorter head terms.
+  const words = userQuery.trim().split(/\s+/).filter(Boolean);
+  const fallbacks = [
+    words.slice(0, 3).join(" "),
+    words.slice(0, 2).join(" "),
+    words[0],
+    clickSubject?.trim(),
+  ].filter((s): s is string => Boolean(s && s.trim() && s.trim() !== q));
+
+  for (const fb of fallbacks) {
+    ddg = await duckDuckGoInstant(fb.trim(), n);
+    if (ddg.length) return ddg;
+  }
+  return [];
 }
 
 export function snippetsToDigest(snippets: WebSnippet[], maxChars = 3500): string {
