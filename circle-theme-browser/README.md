@@ -19,11 +19,9 @@ Under the hood it’s an **Express** API plus a **Vite + React** client, with **
 
 ## Demo
 
-<video src="docs/demo.webm" controls playsinline muted preload="metadata" width="100%"></video>
+<video src="docs/demo.mp4" controls playsinline muted preload="metadata" width="100%"></video>
 
-Add your screen recording as **`docs/demo.webm`** (or rename to `.mp4` and update the `src` above). GitHub renders `<video>` in READMEs. Prefer a **small** file for clone size (or use [Git LFS](https://git-lfs.com/)); **`muted`** keeps inline playback predictable; viewers can unmute in the player if the clip has audio.
-
-**Alternatives:** Link a [YouTube](https://youtube.com) / Loom URL in markdown, or use `![Demo](docs/demo.gif)` for a GIF.
+Screen recording: **`docs/demo.mp4`** (~5 MB). Replace that file to update the demo; GitHub renders `<video>` in READMEs. Viewers can unmute in the player if the clip has sound.
 
 ---
 
