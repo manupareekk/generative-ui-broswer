@@ -9,6 +9,20 @@ type CompilerJson = {
   allowedLabels?: unknown;
 };
 
+const MAX_LABEL_ITEMS = 8;
+
+function clipSceneBrief(s: string, maxChars = 1200): string {
+  const t = s.trim();
+  if (t.length <= maxChars) return t;
+  return `${t.slice(0, maxChars - 1).trimEnd()}…`;
+}
+
+function compilerTemperature(): number {
+  const raw = Number(process.env.GEMINI_COMPILER_TEMPERATURE ?? 0.22);
+  if (!Number.isFinite(raw)) return 0.22;
+  return Math.min(0.85, Math.max(0.05, raw));
+}
+
 function asStringArray(v: unknown, maxItems: number): string[] {
   if (!Array.isArray(v)) return [];
   const out: string[] = [];
@@ -39,7 +53,7 @@ async function geminiJsonText(instruction: string): Promise<string> {
     },
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: instruction }] }],
-      generationConfig: { temperature: 0.35 },
+      generationConfig: { temperature: compilerTemperature() },
     }),
   });
 
@@ -99,24 +113,26 @@ export async function compileNavigateScene(input: {
     `Global visual theme (must carry forward):\n${input.themeBlock.slice(0, 2000)}\n\n` +
     `Retrieval digest (optional grounding):\n${input.retrievalDigest.slice(0, 6000)}\n\n` +
     `Return ONLY JSON (no markdown) of the form:\n` +
-    `{"scene_brief":"…","title_hint":"<=80 chars","allowed_labels":["<=12 words each","… up to 12 items"]}\n` +
+    `{"scene_brief":"…","title_hint":"<=80 chars","allowed_labels":["<=12 words each","… up to ${MAX_LABEL_ITEMS} items"]}\n` +
     `Rules:\n` +
-    `- scene_brief must be a single cohesive scene description for a wide 16:9 frame.\n` +
+    `- scene_brief must be a single cohesive scene description for a wide 16:9 frame; keep it **under ~900 characters** (one tight paragraph + short clauses)—no encyclopedic wall of micro-detail that confuses the image model.\n` +
+    `- Prefer **one dominant layout idea** (e.g. stylized map as hero, or one hero object) plus a **small** set of supporting callouts (floating cards, circular image badges, icon rows)—avoid cramming many large unrelated illustrations (separate Taj, tiger, cricket panel, etc.) that read like a school poster.\n` +
+    `- Explicitly forbid fake UI: no modal toasts, no “continue with draft”, no browser or OS chrome.\n` +
     `- Spell-check all words in scene_brief and allowed_labels; fix obvious typos.\n` +
-    `- allowed_labels: headlines, place names, section titles, short bullets, or map labels that may appear in-frame. Include what the image should show; empty array only if the scene truly needs no text.\n` +
-    `- Balance maps, photography, icons, and readable typography.\n`;
+    `- allowed_labels: at most **${MAX_LABEL_ITEMS}** items (headlines, place names, map labels, short bullets); omit filler; empty array only if the scene truly needs no text.\n` +
+    `- Balance maps, photography, icons, and readable typography; favor **editorial infographic** density over encyclopedia density.\n`;
 
   try {
     const text = await geminiJsonText(instruction);
     const parsed = extractJsonObject(text) as CompilerJson;
-    const scene_brief = typeof parsed.scene_brief === "string" ? parsed.scene_brief.trim() : "";
+    const scene_brief = clipSceneBrief(typeof parsed.scene_brief === "string" ? parsed.scene_brief.trim() : "");
     const title_hint =
       typeof parsed.title_hint === "string"
         ? parsed.title_hint.trim()
         : typeof parsed.titleHint === "string"
           ? parsed.titleHint.trim()
           : "";
-    const labels = asStringArray(parsed.allowed_labels ?? parsed.allowedLabels, 12);
+    const labels = asStringArray(parsed.allowed_labels ?? parsed.allowedLabels, MAX_LABEL_ITEMS);
     if (!scene_brief) throw new Error("empty scene_brief");
     return {
       compiledQuery: buildCompiledUserQuery(scene_brief, labels, input.retrievalDigest),
@@ -142,6 +158,8 @@ export async function compileRegionScene(input: {
   visionNextQuery: string;
   themeBlock: string;
   retrievalDigest: string;
+  /** Single-topic explainer layout (Flipbook-style drill-down vs collage). */
+  flipbookDrilldown?: boolean;
 }): Promise<{ compiledQuery: string; titleHint: string }> {
   const apiKey = geminiApiKey();
   if (!apiKey) {
@@ -158,33 +176,44 @@ export async function compileRegionScene(input: {
     ? `Original user search (stay in this world — combine with sketch subject):\n${anchor.slice(0, 400)}\n\n`
     : "";
 
+  const flipbookBlock = input.flipbookDrilldown
+    ? `Layout mode: **Flipbook drill-down page** (one routed topic only).\n` +
+      `- **One** primary focal: a large central graphic, diagram, map detail, or symbol for the chosen subject only.\n` +
+      `- At most **two** side panels with tightly related facts (origin, dates, meaning)—not a gallery of unrelated national symbols.\n` +
+      `- Optional: slim breadcrumb-style line at top; one footer stat line; thin annotation leader lines from small labels to parts of the focal graphic.\n` +
+      `- **Forbidden:** encyclopedia collages (random tiger + cricket + food + separate monuments) unless they are strictly required to explain this one subject.\n\n`
+    : "";
+
   const instruction =
     `You are a strict prompt compiler for an image model.\n` +
     anchorBlock +
+    flipbookBlock +
     `Previous page user intent:\n${input.pageQuery.slice(0, 2000)}\n\n` +
-    `Vision model says the user sketched toward this subject:\n${input.subject.slice(0, 400)}\n\n` +
-    `Vision model draft next-scene prompt (use as intent, but tighten):\n${input.visionNextQuery.slice(0, 4000)}\n\n` +
+    `Chosen routed topic (user sketch / selection):\n${input.subject.slice(0, 400)}\n\n` +
+    `Vision / route draft next-scene prompt (use as intent, but tighten):\n${input.visionNextQuery.slice(0, 4000)}\n\n` +
     `Global visual theme (must carry forward):\n${input.themeBlock.slice(0, 2000)}\n\n` +
     `Retrieval digest (optional grounding for the sketch subject):\n${input.retrievalDigest.slice(0, 6000)}\n\n` +
     `Return ONLY JSON (no markdown) of the form:\n` +
-    `{"scene_brief":"…","title_hint":"<=80 chars","allowed_labels":["<=12 words each","… up to 12 items"]}\n` +
+    `{"scene_brief":"…","title_hint":"<=80 chars","allowed_labels":["<=12 words each","… up to ${MAX_LABEL_ITEMS} items"]}\n` +
     `Rules:\n` +
-    `- The next image must be MOSTLY about the sketched subject (~70–90% of visual attention), with only light continuity from the prior page.\n` +
+    `- The next image must be MOSTLY about the chosen subject (~70–95% of visual attention), with only light continuity from the prior page.\n` +
     `- When an original user search is given above, scene_brief must stay in that scope (e.g. bullet trains *in Japan*), not an unrelated destination that only appeared as a small map label.\n` +
+    `- No fake OS/browser UI: no modal toasts, scrollbars, or “draft version” dialogs.\n` +
     `- Spell-check all words in scene_brief and allowed_labels.\n` +
-    `- allowed_labels may include headlines, captions, and map labels; balance with photography/maps/icons.\n`;
+    `- scene_brief: **under ~900 characters**, one tight paragraph—image models render cleaner with shorter briefs.\n` +
+    `- allowed_labels: at most **${MAX_LABEL_ITEMS}** items (headlines, captions, map labels); balance with photography/maps/icons.\n`;
 
   try {
     const text = await geminiJsonText(instruction);
     const parsed = extractJsonObject(text) as CompilerJson;
-    const scene_brief = typeof parsed.scene_brief === "string" ? parsed.scene_brief.trim() : "";
+    const scene_brief = clipSceneBrief(typeof parsed.scene_brief === "string" ? parsed.scene_brief.trim() : "");
     const title_hint =
       typeof parsed.title_hint === "string"
         ? parsed.title_hint.trim()
         : typeof parsed.titleHint === "string"
           ? parsed.titleHint.trim()
           : "";
-    const labels = asStringArray(parsed.allowed_labels ?? parsed.allowedLabels, 12);
+    const labels = asStringArray(parsed.allowed_labels ?? parsed.allowedLabels, MAX_LABEL_ITEMS);
     if (!scene_brief) throw new Error("empty scene_brief");
     return {
       compiledQuery: buildCompiledUserQuery(scene_brief, labels, input.retrievalDigest),

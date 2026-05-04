@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { geminiApiKey } from "./geminiKey.js";
 
 export type ReferenceImage = { mimeType: string; dataBase64: string };
@@ -28,7 +29,7 @@ function sleep(ms: number): Promise<void> {
 /** Prepended to every image brief (navigate + region). Not literal web search — steers the model toward a rounded synthesis. */
 const HOLISTIC_FRAME_RULES =
   "Holistic topic synthesis: Treat the user's text like a search query. Render ONE coherent full-frame scene that merges the main themes, entities, and settings a careful reader would expect from strong first-page-style sources—one unified world, not unrelated snippets, not a pasted collage of SERP thumbnails.\n\n" +
-  "Interaction & layout: The vibe is modern discovery (search-engine clarity without simulating a browser): tap/sketch explores the image; compose several clear, scannable regions—highlights, panels, maps, figures, iconography, and readable labels or short copy when it helps—that feel like trustworthy answers, not a single tiny hero. Stay contemporary and bright; avoid medieval, ornate manuscript, or fairytale styling unless the query requires it. Do NOT depict scrollbars, infinite feeds, fake OS window chrome, or address bars unless the user explicitly asked for a realistic device screen.\n\n" +
+  "Interaction & layout: The vibe is modern discovery (search-engine clarity without simulating a browser): tap/sketch explores the image. Prefer a **single dominant focal graphic** (often a clean stylized map or one hero illustration) with **generous whitespace**, then **a few** (roughly 3–7) scannable satellites—floating stat cards, thin-line icons with short labels, and **small circular photo insets** pinned to relevant spots—not a crowded textbook poster that packs unrelated vignettes edge-to-edge. If you show a map, keep it legible and centered in importance; callouts attach to it with subtle connectors. Stay contemporary and bright; avoid medieval, ornate manuscript, or fairytale styling unless the query requires it. Do NOT depict scrollbars, infinite feeds, fake OS dialogs, “draft version” toasts, fake window chrome, or address bars unless the user explicitly asked for a realistic device screen.\n\n" +
   "Typography: on-image text is fine when it helps the scene (headlines, short bullets, map labels, captions). Keep hierarchy clear, type large enough to read, and spell carefully—especially proper nouns and place names. Balance text with photography, maps, icons, and diagrams; avoid illegible micro-type.";
 
 function combinePrompt(themeBlock: string, userQuery: string): string {
@@ -98,6 +99,22 @@ type GeminiPart = {
   inline_data?: { mime_type?: string; data?: string };
 };
 
+/** Mild sharpen on PNG data URLs so UI/text reads crisper (set GEMINI_IMAGE_SHARPEN=0 to skip). */
+async function touchUpImageDataUrl(dataUrl: string): Promise<string> {
+  if (process.env.GEMINI_IMAGE_SHARPEN === "0") return dataUrl;
+  if (!dataUrl.startsWith("data:image/png")) return dataUrl;
+  const m = dataUrl.match(/^data:image\/png;base64,([\s\S]+)$/i);
+  if (!m) return dataUrl;
+  try {
+    const buf = Buffer.from(m[1].replace(/\s+/g, ""), "base64");
+    const out = await sharp(buf).rotate().sharpen({ sigma: 0.55 }).png({ compressionLevel: 7 }).toBuffer();
+    return `data:image/png;base64,${out.toString("base64")}`;
+  } catch (e) {
+    console.warn("[generative-ui-browser] touchUpImageDataUrl:", e);
+    return dataUrl;
+  }
+}
+
 function firstInlineImageDataUrl(parts: GeminiPart[] | undefined): string | null {
   if (!parts) return null;
   for (const p of parts) {
@@ -123,6 +140,7 @@ async function geminiImage(
   const lead =
     `Create ONE polished, high-resolution image that matches the following brief.\n` +
     `Output only the final artwork — no caption, no border, no browser window, no scrollbar chrome, no explanatory panels around it.\n` +
+    `Rendering: crisp readable type at intended sizes, clean vector-like edges on UI shapes, coherent soft lighting, subtle depth and shadows, sharp focus on foreground elements, no watermarks, no muddy compression look.\n` +
     (referenceImages?.length
       ? `Reference image(s) are attached: preserve continuity (palette, lighting, materials, world) with the prior frame; if two images are present, the second is a zoomed crop of what the user sketched—make that the primary focus while staying coherent.\n\n`
       : "\n");
@@ -141,6 +159,9 @@ async function geminiImage(
   }
   parts.push({ text: prompt });
 
+  const sizeRaw = (process.env.GEMINI_IMAGE_SIZE || "2K").trim().toUpperCase();
+  const imageSize = ["1K", "2K", "4K"].includes(sizeRaw) ? sizeRaw : "2K";
+
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -158,6 +179,7 @@ async function geminiImage(
         responseModalities: ["TEXT", "IMAGE"],
         imageConfig: {
           aspectRatio: "16:9",
+          imageSize,
         },
       },
     }),
@@ -237,7 +259,8 @@ export async function generatePage(input: GenerateInput): Promise<GenerateOutput
   let image_url: string;
   try {
     if (geminiApiKey()) {
-      image_url = await geminiImage(fullPrompt, onProgress, referenceImages);
+      const raw = await geminiImage(fullPrompt, onProgress, referenceImages);
+      image_url = await touchUpImageDataUrl(raw);
     } else if (process.env.OPENAI_API_KEY) {
       image_url = await openaiImage(fullPrompt, onProgress);
     } else {

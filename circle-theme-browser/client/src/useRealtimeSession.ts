@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiUrl } from "./apiOrigin.js";
+import { logStreamEvent } from "./streamDebug.js";
 import type { StreamEvent } from "./types.js";
 
 function parseEvent(data: string): StreamEvent | null {
@@ -26,16 +27,28 @@ export function useRealtimeSession(sessionId: string | null) {
     setLastError(null);
 
     let alive = true;
-    const es = new EventSource(apiUrl(`/api/stream/${encodeURIComponent(sessionId)}`));
-    es.onopen = () => alive && setConnected(true);
+    const streamUrl = apiUrl(`/api/stream/${encodeURIComponent(sessionId)}`);
+    console.info("[generative-ui-browser] SSE subscribing", streamUrl);
+    const es = new EventSource(streamUrl);
+    es.onopen = () => {
+      if (!alive) return;
+      setConnected(true);
+      console.info("[generative-ui-browser] SSE open");
+    };
     es.onerror = () => {
       if (!alive) return;
       setConnected(false);
       setLastError("SSE connection interrupted");
+      console.warn("[generative-ui-browser] SSE error / disconnected (retrying in browser)");
     };
     es.onmessage = (m) => {
       const ev = parseEvent(m.data);
-      if (ev) push(ev);
+      if (!ev) {
+        console.warn("[generative-ui-browser] SSE non-JSON message", m.data?.slice?.(0, 200));
+        return;
+      }
+      logStreamEvent(ev);
+      push(ev);
     };
 
     return () => {
@@ -47,3 +60,4 @@ export function useRealtimeSession(sessionId: string | null) {
 
   return { events, connected, lastError };
 }
+

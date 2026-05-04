@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiUrl } from "./apiOrigin.js";
-import { SketchOverlay } from "./SketchOverlay.js";
-import type { StreamEvent } from "./types.js";
+import { TapOverlay } from "./TapOverlay.js";
+import { formatStreamEvent } from "./streamDebug.js";
+import type { PageHotspot, StreamEvent } from "./types.js";
 import { useRealtimeSession } from "./useRealtimeSession.js";
 
 function latestPage(events: StreamEvent[]): {
@@ -9,11 +10,20 @@ function latestPage(events: StreamEvent[]): {
   image_url: string;
   title: string;
   anchor_query?: string;
+  content_id?: string;
+  hotspots?: PageHotspot[];
 } | null {
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
     if (e.type === "page")
-      return { query: e.query, image_url: e.image_url, title: e.title, anchor_query: e.anchor_query };
+      return {
+        query: e.query,
+        image_url: e.image_url,
+        title: e.title,
+        anchor_query: e.anchor_query,
+        content_id: e.content_id,
+        hotspots: e.hotspots,
+      };
   }
   return null;
 }
@@ -27,6 +37,8 @@ function latestRelevantError(events: StreamEvent[]): string | null {
   }
   return null;
 }
+
+type FocusRegion = { cx_px: number; cy_px: number; r_px: number; img_w: number; img_h: number };
 
 export function App() {
   const [query, setQuery] = useState("");
@@ -42,7 +54,48 @@ export function App() {
   const imgRef = useRef<HTMLImageElement>(null);
   const errLiveRef = useRef<HTMLDivElement>(null);
 
-  const { events } = useRealtimeSession(sessionId);
+  const { events, connected, lastError: sseError } = useRealtimeSession(sessionId);
+
+  const debugTail = useMemo(() => {
+    const tail = events.slice(-18).map(formatStreamEvent);
+    return tail.join("\n");
+  }, [events]);
+
+  const lastPhaseLine = useMemo(() => {
+    for (let i = events.length - 1; i >= 0; i--) {
+      const e = events[i];
+      if (e.type === "phase") return formatStreamEvent(e);
+      if (e.type === "progress") return formatStreamEvent(e);
+    }
+    return "—";
+  }, [events]);
+
+  useEffect(() => {
+    const w = window as unknown as {
+      __GUI_BROWSER_DEBUG__?: {
+        sessionId: string | null;
+        connected: boolean;
+        sseError: string | null;
+        genPending: boolean;
+        regionBusy: boolean;
+        pendingTrace: string | null;
+        pendingKind: string | null;
+        eventCount: number;
+        events: StreamEvent[];
+      };
+    };
+    w.__GUI_BROWSER_DEBUG__ = {
+      sessionId,
+      connected,
+      sseError,
+      genPending,
+      regionBusy,
+      pendingTrace,
+      pendingKind,
+      eventCount: events.length,
+      events: events.slice(-40),
+    };
+  }, [sessionId, connected, sseError, genPending, regionBusy, pendingTrace, pendingKind, events]);
 
   const page = useMemo(() => latestPage(events), [events]);
   const streamError = useMemo(() => latestRelevantError(events), [events]);
@@ -142,6 +195,9 @@ export function App() {
         }
         throw new Error(msg);
       }
+      console.info("[generative-ui-browser] navigate accepted (202); watch SSE + #generative-ui-browser-debug", {
+        client_trace,
+      });
     } catch (e) {
       console.error(e);
       setFetchError(e instanceof Error ? e.message : "Network error — try again.");
@@ -151,8 +207,8 @@ export function App() {
     }
   }, [ensureSession, query]);
 
-  const onSketchCommit = useCallback(
-    async (region: { cx_px: number; cy_px: number; r_px: number; img_w: number; img_h: number }) => {
+  const onTapCommit = useCallback(
+    async (region: FocusRegion) => {
       if (!sessionId || !page) return;
       setFetchError(null);
       setErrorDismissed(false);
@@ -160,8 +216,8 @@ export function App() {
       setPendingTrace(client_trace);
       setPendingKind("region");
       setRegionBusy(true);
+      const anchor_query = (page.anchor_query ?? query.trim()).slice(0, 400);
       try {
-        const anchor_query = (page.anchor_query ?? query.trim()).slice(0, 400);
         const res = await fetch(apiUrl("/api/region"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -176,18 +232,73 @@ export function App() {
         });
         if (!res.ok) {
           const body = await res.text();
-          let msg = "Could not refine from sketch.";
+          let msg = "Could not open that topic.";
           try {
             const j = JSON.parse(body) as { error?: string };
             if (j.error) msg = j.error;
           } catch {
             if (body.trim()) msg = body.slice(0, 200);
           }
-          setFetchError(msg);
-          setRegionBusy(false);
-          setPendingTrace(null);
-          setPendingKind(null);
+          throw new Error(msg);
         }
+        console.info("[generative-ui-browser] region accepted (202); watch SSE + #generative-ui-browser-debug", {
+          client_trace,
+        });
+      } catch (e) {
+        console.error(e);
+        setFetchError(e instanceof Error ? e.message : "Network error — try again.");
+        setRegionBusy(false);
+        setPendingTrace(null);
+        setPendingKind(null);
+      }
+    },
+    [page, query, sessionId],
+  );
+
+  const onGraphTapCommit = useCallback(
+    async (hotspotId: string, contentId: string) => {
+      const img = imgRef.current;
+      if (!sessionId || !page || !img?.naturalWidth) return;
+      setFetchError(null);
+      setErrorDismissed(false);
+      const client_trace = crypto.randomUUID();
+      setPendingTrace(client_trace);
+      setPendingKind("region");
+      setRegionBusy(true);
+      const anchor_query = (page.anchor_query ?? query.trim()).slice(0, 400);
+      const iw = img.naturalWidth;
+      const ih = img.naturalHeight;
+      try {
+        const res = await fetch(apiUrl("/api/region"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: sessionId,
+            image_url: page.image_url,
+            page_query: page.query,
+            anchor_query,
+            client_trace,
+            hotspot_id: hotspotId,
+            content_id: contentId,
+            img_w: iw,
+            img_h: ih,
+            cx_px: 1,
+            cy_px: 1,
+            r_px: 1,
+          }),
+        });
+        if (!res.ok) {
+          const body = await res.text();
+          let msg = "Could not open that topic.";
+          try {
+            const j = JSON.parse(body) as { error?: string };
+            if (j.error) msg = j.error;
+          } catch {
+            if (body.trim()) msg = body.slice(0, 200);
+          }
+          throw new Error(msg);
+        }
+        console.info("[generative-ui-browser] region graph (202); watch SSE", { client_trace, hotspotId });
       } catch (e) {
         console.error(e);
         setFetchError(e instanceof Error ? e.message : "Network error — try again.");
@@ -212,17 +323,6 @@ export function App() {
       void navigate();
     }
   };
-
-  const onSketchRejected = useCallback(
-    (reason: "too_short" | "too_small") => {
-      if (reason === "too_short") {
-        showHint("Keep drawing a little longer around the area you want to explore.");
-      } else {
-        showHint("Make a larger loop around the subject — sketch a bit bigger.");
-      }
-    },
-    [showHint],
-  );
 
   return (
     <div className="page">
@@ -269,19 +369,22 @@ export function App() {
           <div className="empty-canvas">
             <p className="empty-title">Start with a description</p>
             <p className="empty-body">
-              Type what you want to see, submit, then <strong>sketch on the image</strong> with your pointer to zoom or branch
-              the story.
+              Type what you want to see, submit, then <strong>tap on the image</strong>. When the page exposes a tap graph,
+              repeated taps on the same element follow a <strong>fixed route</strong>; otherwise one free tap uses vision.
             </p>
           </div>
         ) : null}
         {page ? (
           <div className="stage">
             <img ref={imgRef} src={page.image_url} alt={page.title} />
-            <SketchOverlay
+            <TapOverlay
               imgRef={imgRef}
               disabled={locked}
-              onCommit={onSketchCommit}
-              onStrokeRejected={onSketchRejected}
+              hotspots={page.hotspots}
+              contentId={page.content_id ?? null}
+              onGraphTap={(hotspotId, contentId) => void onGraphTapCommit(hotspotId, contentId)}
+              onTap={onTapCommit}
+              onTapOutsideImage={() => showHint("Tap on the picture itself — not the empty margin.")}
             />
           </div>
         ) : null}
@@ -291,6 +394,23 @@ export function App() {
           </div>
         ) : null}
       </main>
+
+      <div
+        id="generative-ui-browser-debug"
+        className="inspect-debug-hidden"
+        aria-hidden="true"
+        data-sse-connected={connected ? "true" : "false"}
+        data-sse-error={sseError ?? ""}
+        data-gen-pending={genPending ? "true" : "false"}
+        data-region-busy={regionBusy ? "true" : "false"}
+        data-pending-kind={pendingKind ?? ""}
+        data-pending-trace={pendingTrace ?? ""}
+        data-session={sessionId ?? ""}
+        data-last-line={lastPhaseLine}
+        data-event-count={String(events.length)}
+      >
+        <pre>{debugTail || "No events yet — submit a query."}</pre>
+      </div>
     </div>
   );
 }

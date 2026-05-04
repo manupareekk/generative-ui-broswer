@@ -1,3 +1,5 @@
+import type { PageHotspot } from "./hotspotStore.js";
+
 export type StreamEvent =
   | { type: "session_started"; session_id: string }
   | { type: "phase"; phase: string; detail?: string }
@@ -20,6 +22,10 @@ export type StreamEvent =
       image_url: string;
       session_id: string;
       image_variants?: Record<string, string>;
+      /** Stable id for this bitmap’s tap graph; send with `hotspot_id` for deterministic routing. */
+      content_id?: string;
+      /** Discrete tap targets (normalized rects + cached prompts). */
+      hotspots?: PageHotspot[];
       /** Echoed from the client when present so the UI can match async completions. */
       client_trace?: string;
     }

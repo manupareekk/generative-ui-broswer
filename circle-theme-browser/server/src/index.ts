@@ -6,8 +6,11 @@ import { publish, subscribe, type StreamEvent } from "./bus.js";
 import type { ReferenceImage } from "./ai.js";
 import { compileNavigateScene, compileRegionScene } from "./compileScene.js";
 import { generatePage } from "./ai.js";
+import { detectHotspots } from "./hotspotDetect.js";
+import { getPageHotspots, setPageHotspots } from "./hotspotStore.js";
+import type { PageHotspot } from "./hotspotStore.js";
 import { cropSquareAround, loadImageBufferFromUrl, toPngReference } from "./imageRef.js";
-import { resolveRegionIntent } from "./regionIntent.js";
+import { resolveRegionIntentRoutes } from "./regionIntent.js";
 import { retrieveSnippets, snippetsToDigest } from "./retrieveWeb.js";
 import { DEFAULT_THEME_KEY, resolveThemeBlock, THEME_PRESETS } from "./themes.js";
 
@@ -78,6 +81,32 @@ function themeFromBody(body: express.Request["body"]): string {
   return resolveThemeBlock(preset, theme_custom);
 }
 
+/** After an image exists: vision proposes tap targets; store graph for deterministic `hotspot_id` routing. */
+async function attachHotspots(
+  sessionId: string,
+  imageUrl: string,
+  ctx: { titleHint?: string; anchorHint?: string },
+): Promise<{ content_id: string; hotspots: PageHotspot[] }> {
+  const content_id = `pg_${crypto.randomUUID()}`;
+  if (!geminiConfigured()) {
+    return { content_id, hotspots: [] };
+  }
+  try {
+    publish(sessionId, {
+      type: "phase",
+      phase: "hotspots",
+      detail: "Mapping tap targets on this page (graph)",
+    });
+    const buf = await loadImageBufferFromUrl(imageUrl);
+    const hotspots = await detectHotspots(buf, ctx);
+    setPageHotspots(sessionId, content_id, hotspots);
+    return { content_id, hotspots };
+  } catch (e) {
+    console.error("[generative-ui-browser] attachHotspots:", e);
+    return { content_id, hotspots: [] };
+  }
+}
+
 app.post("/api/navigate", (req, res) => {
   const session_id = String(req.body?.session_id || "");
   const query = String(req.body?.query || "");
@@ -125,6 +154,11 @@ app.post("/api/navigate", (req, res) => {
         },
       });
 
+      const { content_id, hotspots } = await attachHotspots(session_id, out.image_url, {
+        titleHint: out.title,
+        anchorHint: query.trim(),
+      });
+
       publish(session_id, {
         type: "page",
         title: out.title,
@@ -133,6 +167,8 @@ app.post("/api/navigate", (req, res) => {
         image_url: out.image_url,
         session_id,
         image_variants: out.image_variants,
+        content_id,
+        hotspots: hotspots.length ? hotspots : undefined,
         client_trace,
       });
     } catch (e) {
@@ -147,9 +183,17 @@ app.post("/api/region", (req, res) => {
   const client_trace = String(req.body?.client_trace || "").trim() || undefined;
   const image_url = String(req.body?.image_url || "");
   const page_query = String(req.body?.page_query || "");
-  const cx_px = Number(req.body?.cx_px);
-  const cy_px = Number(req.body?.cy_px);
-  const r_px = Number(req.body?.r_px);
+  const hotspot_id_raw = String(req.body?.hotspot_id || "").trim().slice(0, 64);
+  const content_id = String(req.body?.content_id || "").trim().slice(0, 80);
+  const graphHit = Boolean(hotspot_id_raw && content_id);
+  if ((hotspot_id_raw && !content_id) || (!hotspot_id_raw && content_id)) {
+    res.status(400).json({ error: "Send both hotspot_id and content_id, or neither" });
+    return;
+  }
+
+  let cx_px = Number(req.body?.cx_px);
+  let cy_px = Number(req.body?.cy_px);
+  let r_px = Number(req.body?.r_px);
   const img_w = Number(req.body?.img_w);
   const img_h = Number(req.body?.img_h);
 
@@ -157,13 +201,19 @@ app.post("/api/region", (req, res) => {
     res.status(400).json({ error: "session_id and image_url are required" });
     return;
   }
-  if (![cx_px, cy_px, r_px, img_w, img_h].every((n) => Number.isFinite(n) && n > 0)) {
-    res.status(400).json({ error: "cx_px, cy_px, r_px, img_w, img_h must be positive numbers" });
+  if (![img_w, img_h].every((n) => Number.isFinite(n) && n > 0)) {
+    res.status(400).json({ error: "img_w and img_h must be positive numbers" });
     return;
   }
-  if (r_px < 4) {
-    res.status(400).json({ error: "sketch too small; draw a larger area" });
-    return;
+  if (!graphHit) {
+    if (![cx_px, cy_px, r_px].every((n) => Number.isFinite(n) && n > 0)) {
+      res.status(400).json({ error: "cx_px, cy_px, r_px must be positive numbers" });
+      return;
+    }
+    if (r_px < 4) {
+      res.status(400).json({ error: "focus radius too small" });
+      return;
+    }
   }
 
   const themeBlock = themeFromBody(req.body);
@@ -173,25 +223,60 @@ app.post("/api/region", (req, res) => {
 
   void (async () => {
     try {
-      publish(session_id, {
-        type: "phase",
-        phase: "region",
-        detail: "Resolving what you sketched (vision → next prompt)",
-      });
+      let subject: string;
+      let next_query: string;
 
-      const { subject, next_query } = await resolveRegionIntent(
-        image_url,
-        page_query,
-        themeBlock,
-        {
-          cx_px,
-          cy_px,
-          r_px,
-          img_w,
-          img_h,
-        },
-        { anchorQuery: anchor_query || undefined },
-      );
+      if (graphHit) {
+        const hid = hotspot_id_raw.toLowerCase();
+        const list = getPageHotspots(session_id, content_id);
+        const h = list?.find((x) => x.id === hid);
+        if (!h) {
+          publish(session_id, {
+            type: "error",
+            message: "Unknown tap target — graph may have expired. Run a new search and try again.",
+            client_trace,
+          });
+          return;
+        }
+        publish(session_id, {
+          type: "phase",
+          phase: "region",
+          detail: `Graph route: ${h.id}`,
+        });
+        subject = h.label;
+        next_query = h.next_query;
+        const iw = img_w;
+        const ih = img_h;
+        cx_px = (h.rect.x + h.rect.w / 2) * iw;
+        cy_px = (h.rect.y + h.rect.h / 2) * ih;
+        r_px = Math.max(36, Math.min(iw, ih) * 0.085, 0.5 * Math.max(h.rect.w * iw, h.rect.h * ih));
+      } else {
+        publish(session_id, {
+          type: "phase",
+          phase: "region",
+          detail: "Resolving tap → best route (vision)",
+        });
+
+        const resolved = await resolveRegionIntentRoutes(
+          image_url,
+          page_query,
+          themeBlock,
+          {
+            cx_px,
+            cy_px,
+            r_px,
+            img_w,
+            img_h,
+          },
+          { anchorQuery: anchor_query || undefined },
+        );
+        const pick = resolved.routes[0] ?? {
+          label: resolved.subject,
+          next_query: resolved.next_query,
+        };
+        subject = (pick.label || resolved.subject).trim() || resolved.subject;
+        next_query = (pick.next_query || resolved.next_query).trim() || resolved.next_query;
+      }
 
       publish(session_id, {
         type: "region_resolved",
@@ -206,7 +291,7 @@ app.post("/api/region", (req, res) => {
       publish(session_id, {
         type: "phase",
         phase: "retrieve",
-        detail: "Gathering lightweight web snippets for sketch focus",
+        detail: "Gathering lightweight web snippets for tap focus",
       });
       // Search: circled subject is primary; anchor (user's search branch) is leading context (see retrieveSnippets join order).
       const snippets = anchor_query.trim()
@@ -226,12 +311,13 @@ app.post("/api/region", (req, res) => {
         visionNextQuery: next_query,
         themeBlock,
         retrievalDigest: digest,
+        flipbookDrilldown: true,
       });
 
       publish(session_id, {
         type: "phase",
         phase: "render",
-        detail: "Generating next image from sketched region",
+        detail: "Generating next image from tap",
       });
 
       let referenceImages: ReferenceImage[] | undefined;
@@ -262,6 +348,11 @@ app.post("/api/region", (req, res) => {
         },
       });
 
+      const { content_id: next_content_id, hotspots } = await attachHotspots(session_id, out.image_url, {
+        titleHint: out.title,
+        anchorHint: anchor_query || undefined,
+      });
+
       publish(session_id, {
         type: "page",
         title: out.title,
@@ -270,6 +361,8 @@ app.post("/api/region", (req, res) => {
         image_url: out.image_url,
         session_id,
         image_variants: out.image_variants,
+        content_id: next_content_id,
+        hotspots: hotspots.length ? hotspots : undefined,
         client_trace,
       });
     } catch (e) {

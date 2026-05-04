@@ -21,12 +21,14 @@
 
 html {
   height: 100%;
+  overflow: hidden;
 }
 
 body {
   margin: 0;
   min-height: 100%;
   height: 100%;
+  overflow: hidden;
   background: var(--surface);
   color: var(--text);
   font-family: var(--font);
@@ -36,6 +38,7 @@ body {
 #root {
   min-height: 100%;
   height: 100%;
+  overflow: hidden;
   outline: none;
 }
 
@@ -46,10 +49,14 @@ body {
 }
 
 .page {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background: var(--surface);
 }
 
@@ -147,12 +154,13 @@ body {
 }
 
 .canvas {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   width: 100%;
   background: var(--surface);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .stage {
@@ -275,8 +283,11 @@ body {
 
 .stage img {
   display: block;
-  width: 100%;
-  height: 100%;
+  /* min-*:0 lets the flex item shrink below intrinsic bitmap size (avoids page scroll). */
+  min-width: 0;
+  min-height: 0;
+  width: auto;
+  height: auto;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
@@ -293,6 +304,40 @@ body {
   touch-action: none;
 }
 
+.tap-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+/* Brief ring so a tap feels acknowledged (inside letterbox or on image). */
+.tap-ripple {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  margin-top: -14px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 2px solid rgba(42, 41, 38, 0.65);
+  background: rgba(253, 252, 249, 0.35);
+  pointer-events: none;
+  animation: tap-ripple-out 0.45s ease-out forwards;
+}
+
+@keyframes tap-ripple-out {
+  from {
+    transform: scale(0.4);
+    opacity: 1;
+  }
+  to {
+    transform: scale(2.75);
+    opacity: 0;
+  }
+}
+
 .sr-error {
   position: absolute;
   width: 1px;
@@ -304,3 +349,22 @@ body {
   white-space: nowrap;
   border: 0;
 }
+
+/* Stream log: hidden on-screen but still in DOM for DevTools (#generative-ui-browser-debug, data-*, pre). */
+.inspect-debug-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.inspect-debug-hidden pre {
+  margin: 0;
+  font: inherit;
+}
+

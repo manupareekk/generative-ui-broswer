@@ -1,3 +1,10 @@
+export type PageHotspot = {
+  id: string;
+  label: string;
+  next_query: string;
+  rect: { x: number; y: number; w: number; h: number };
+};
+
 export type StreamEvent =
   | { type: "session_started"; session_id: string }
   | { type: "phase"; phase: string; detail?: string }
@@ -20,6 +27,8 @@ export type StreamEvent =
       image_url: string;
       session_id: string;
       image_variants?: Record<string, string>;
+      content_id?: string;
+      hotspots?: PageHotspot[];
       client_trace?: string;
     }
   | { type: "error"; message: string; client_trace?: string };
