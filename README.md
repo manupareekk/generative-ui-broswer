@@ -2,7 +2,9 @@
 
 **Generative UI Browser** — a search-style flow where each “page” is a full image you tap or sketch to explore. This repository hosts that project; the app you run lives in the **`circle-theme-browser/`** folder (historical path name).
 
-<video src="circle-theme-browser/docs/demo.mp4" controls playsinline muted preload="metadata" width="100%"></video>
+<video src="https://raw.githubusercontent.com/manupareekk/generative-ui-browser/main/circle-theme-browser/docs/demo.mp4" controls playsinline muted preload="metadata" width="100%"></video>
+
+**[Open demo video](./circle-theme-browser/docs/demo.mp4)** if the player does not load in your browser.
 
 ## Where this fits
 
