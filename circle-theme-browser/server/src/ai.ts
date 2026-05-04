@@ -231,7 +231,7 @@ export async function generatePage(input: GenerateInput): Promise<GenerateOutput
     }
   } catch (e) {
     const message = e instanceof Error ? e.message : "Generation failed";
-    console.error("[circle-theme-browser] generatePage:", message);
+    console.error("[generative-ui-browser] generatePage:", message);
     onProgress(100);
     throw new Error(message);
   }

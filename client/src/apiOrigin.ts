@@ -1,7 +1,7 @@
 /**
  * In dev, leave unset so requests stay same-origin and Vite proxies `/api` to the server.
  * For production (e.g. static app on Vercel), set `VITE_API_ORIGIN` to the Express API base
- * (no trailing slash), e.g. `https://generative-browser-xxxx.up.railway.app`.
+ * (no trailing slash), e.g. `https://generative-ui-browser-xxxx.up.railway.app`.
  */
 export function apiOrigin(): string {
   const raw = import.meta.env.VITE_API_ORIGIN as string | undefined;

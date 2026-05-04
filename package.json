@@ -1,6 +1,6 @@
 {
-  "name": "generative-browser",
-  "description": "Generative UI search browser — prompt like search, full-frame images, sketch to refine (see circle-theme-browser).",
+  "name": "generative-ui-browser",
+  "description": "generative-ui-browser — search-style prompts, full-frame images, sketch to explore (monorepo; app in circle-theme-browser/).",
   "private": true,
   "workspaces": ["server", "client"],
   "scripts": {

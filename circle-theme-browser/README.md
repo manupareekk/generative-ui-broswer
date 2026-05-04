@@ -1,8 +1,8 @@
-# Circle theme browser
+# generative-ui-browser
 
 ## What you’re running
 
-This is the **generative UI search browser** in runnable form: a **single search bar** and a **full-frame image** underneath. You describe what you want to see (like you’d type a search), press go, and the “answer” isn’t a list of links—it’s **one picture** meant to carry the idea.
+This folder (`circle-theme-browser` in the monorepo) is the **generative-ui-browser** app: a **single search bar** and a **full-frame image** underneath. You describe what you want to see (like you’d type a search), press go, and the “answer” isn’t a list of links—it’s **one picture** meant to carry the idea.
 
 **What’s new compared to typical generative UI?**  
 Instead of AI living *inside* classic layout components, the **page itself is the output**. To move forward, you **sketch on the image**—roughly circling or looping the part you care about—and the app asks the model to **continue from that place**. You’re navigating **through** the image, not through menus.

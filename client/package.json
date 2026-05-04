@@ -1,5 +1,5 @@
 {
-  "name": "generative-browser-client",
+  "name": "generative-ui-browser-client",
   "private": true,
   "type": "module",
   "scripts": {

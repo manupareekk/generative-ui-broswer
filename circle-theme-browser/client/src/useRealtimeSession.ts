@@ -10,7 +10,7 @@ function parseEvent(data: string): StreamEvent | null {
   }
 }
 
-/** SSE subscription for one session (no dependency on the main generative-browser app). */
+/** SSE subscription for one session (standalone generative-ui-browser client). */
 export function useRealtimeSession(sessionId: string | null) {
   const [events, setEvents] = useState<StreamEvent[]>([]);
   const [connected, setConnected] = useState(false);

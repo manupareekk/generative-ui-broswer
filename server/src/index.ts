@@ -172,5 +172,5 @@ wss.on("connection", (socket, req) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`generative-browser server http://localhost:${PORT}`);
+  console.log(`generative-ui-browser server http://localhost:${PORT}`);
 });

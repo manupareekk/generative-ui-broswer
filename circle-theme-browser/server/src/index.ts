@@ -28,7 +28,7 @@ function writeSse(res: express.Response, event: StreamEvent): void {
 app.get("/api/health", (_req, res) => {
   res.json({
     ok: true,
-    service: "circle-theme-browser",
+    service: "generative-ui-browser",
     gemini_image_configured: geminiConfigured(),
   });
 });
@@ -206,10 +206,10 @@ app.post("/api/region", (req, res) => {
 
 app.listen(PORT, () => {
   const key = geminiConfigured();
-  console.log(`circle-theme-browser API http://127.0.0.1:${PORT}`);
+  console.log(`generative-ui-browser API http://127.0.0.1:${PORT}`);
   console.log(
     key
       ? "Gemini / Google image key: loaded (native image generation enabled)."
-      : "Gemini / Google image key: MISSING — set GEMINI_API_KEY in circle-theme-browser/.env (SVG stub only).",
+      : "Gemini / Google image key: MISSING — set GEMINI_API_KEY in .env next to package.json (SVG stub only).",
   );
 });

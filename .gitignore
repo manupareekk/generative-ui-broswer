@@ -6,5 +6,5 @@ dist/
 **/.env.local
 .DS_Store
 
-# Standalone starter (own git repo); remove this line if you want it inside generative-browser.
+# Standalone starter (own git repo); remove this line if you want it inside generative-ui-browser.
 a2ui-experiment-starter/

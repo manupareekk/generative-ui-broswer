@@ -51,7 +51,7 @@ function svgPage(title: string, query: string): string {
     title,
   )}</text>
   ${body}
-  <text x="80" y="600" fill="#64748b" font-family="ui-monospace, monospace" font-size="14">generative-browser · stub frame (set GEMINI_API_KEY or OPENAI_API_KEY)</text>
+  <text x="80" y="600" fill="#64748b" font-family="ui-monospace, monospace" font-size="14">generative-ui-browser · stub frame (set GEMINI_API_KEY or OPENAI_API_KEY)</text>
 </svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }

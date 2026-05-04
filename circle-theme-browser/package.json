@@ -1,9 +1,9 @@
 {
-  "name": "circle-theme-browser",
+  "name": "generative-ui-browser",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Generative UI search browser — search box, AI images as pages, sketch regions to explore deeper.",
+  "description": "generative-ui-browser — search-style box, full-frame AI images, sketch regions to explore deeper.",
   "scripts": {
     "dev": "concurrently -n server,client -c blue,magenta \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "tsx watch server/src/index.ts",
