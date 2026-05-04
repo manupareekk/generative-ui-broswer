@@ -393,6 +393,19 @@ export function App() {
             {transientHint}
           </div>
         ) : null}
+        {locked ? (
+          <div
+            className="phase-loading"
+            role="status"
+            aria-label={pendingKind === "region" ? "Loading topic" : "Loading"}
+            aria-busy="true"
+            data-over-page={page ? "true" : "false"}
+          >
+            <div className="phase-loading-card">
+              <span className="phase-spinner" aria-hidden="true" />
+            </div>
+          </div>
+        ) : null}
       </main>
 
       <div

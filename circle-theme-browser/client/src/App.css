@@ -154,6 +154,7 @@ body {
 }
 
 .canvas {
+  position: relative;
   flex: 1 1 0;
   min-height: 0;
   width: 100%;
@@ -250,6 +251,59 @@ body {
 .empty-body strong {
   color: var(--text);
   font-weight: 600;
+}
+
+.phase-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(245, 245, 243, 0.92);
+  animation: phase-veil-in 0.2s ease;
+}
+
+.phase-loading[data-over-page="true"] {
+  background: rgba(28, 28, 26, 0.28);
+}
+
+@keyframes phase-veil-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.phase-loading-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.1rem;
+  border-radius: 14px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--chrome-border);
+  box-shadow: 0 4px 24px rgba(28, 28, 26, 0.1);
+}
+
+.phase-spinner {
+  display: block;
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  border: 3px solid var(--chrome-border);
+  border-top-color: var(--text-muted);
+  border-radius: 50%;
+  animation: phase-spin 0.7s linear infinite;
+}
+
+@keyframes phase-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .hint-toast {
