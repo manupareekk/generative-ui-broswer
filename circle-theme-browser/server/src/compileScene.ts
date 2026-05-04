@@ -17,7 +17,7 @@ function asStringArray(v: unknown, maxItems: number): string[] {
     const s = x.replace(/\s+/g, " ").trim();
     if (!s) continue;
     const words = s.split(/\s+/).filter(Boolean);
-    const clipped = words.slice(0, 8).join(" ");
+    const clipped = words.slice(0, 12).join(" ");
     out.push(clipped);
     if (out.length >= maxItems) break;
   }
@@ -60,8 +60,8 @@ async function geminiJsonText(instruction: string): Promise<string> {
 function buildCompiledUserQuery(sceneBrief: string, labels: string[], retrievalDigest: string): string {
   const labelBlock =
     labels.length > 0
-      ? `Allowed on-image labels only if truly necessary (max 8 words each, spell-checked, Title Case for proper names):\n- ${labels.join("\n- ")}`
-      : "Avoid on-image text unless absolutely necessary; prefer icons, maps, photography, and diagrams without words.";
+      ? `Suggested on-image text snippets (max ~12 words each, spell-checked, Title Case for proper names — use as headlines, labels, or captions where helpful):\n- ${labels.join("\n- ")}`
+      : "On-image text is allowed: headlines, short bullets, map labels, dates, and captions when they make the scene clearer. Spell-check everything; keep type legible and hierarchically clear.";
 
   const retrievalBlock = retrievalDigest.trim()
     ? `Retrieval notes (may be incomplete; do not invent URLs; use only as factual guardrails):\n${retrievalDigest.trim()}`
@@ -72,9 +72,9 @@ function buildCompiledUserQuery(sceneBrief: string, labels: string[], retrievalD
     `${retrievalBlock}\n\n` +
     `Typography / spelling:\n` +
     `${labelBlock}\n` +
-    `If any words appear in-frame, keep them minimal, large, and carefully spelled.\n\n` +
+    `Balance visuals with text; avoid illegible micro-type.\n\n` +
     `Visual density:\n` +
-    `Prefer photography, maps, icons, and charts with minimal labels over paragraphs of text.`
+    `Combine photography, maps, icons, charts, and readable typography as fits the brief.`
   );
 }
 
@@ -99,12 +99,12 @@ export async function compileNavigateScene(input: {
     `Global visual theme (must carry forward):\n${input.themeBlock.slice(0, 2000)}\n\n` +
     `Retrieval digest (optional grounding):\n${input.retrievalDigest.slice(0, 6000)}\n\n` +
     `Return ONLY JSON (no markdown) of the form:\n` +
-    `{"scene_brief":"…","title_hint":"<=80 chars","allowed_labels":["<=8 words each","… up to 6 items"]}\n` +
+    `{"scene_brief":"…","title_hint":"<=80 chars","allowed_labels":["<=12 words each","… up to 12 items"]}\n` +
     `Rules:\n` +
     `- scene_brief must be a single cohesive scene description for a wide 16:9 frame.\n` +
     `- Spell-check all words in scene_brief and allowed_labels; fix obvious typos.\n` +
-    `- allowed_labels should be short proper nouns / section titles the image may show IF needed; prefer empty array if text can be avoided.\n` +
-    `- Prefer maps, photography, icons; avoid long paragraphs of on-image text.\n`;
+    `- allowed_labels: headlines, place names, section titles, short bullets, or map labels that may appear in-frame. Include what the image should show; empty array only if the scene truly needs no text.\n` +
+    `- Balance maps, photography, icons, and readable typography.\n`;
 
   try {
     const text = await geminiJsonText(instruction);
@@ -116,7 +116,7 @@ export async function compileNavigateScene(input: {
         : typeof parsed.titleHint === "string"
           ? parsed.titleHint.trim()
           : "";
-    const labels = asStringArray(parsed.allowed_labels ?? parsed.allowedLabels, 6);
+    const labels = asStringArray(parsed.allowed_labels ?? parsed.allowedLabels, 12);
     if (!scene_brief) throw new Error("empty scene_brief");
     return {
       compiledQuery: buildCompiledUserQuery(scene_brief, labels, input.retrievalDigest),
@@ -159,11 +159,11 @@ export async function compileRegionScene(input: {
     `Global visual theme (must carry forward):\n${input.themeBlock.slice(0, 2000)}\n\n` +
     `Retrieval digest (optional grounding for the sketch subject):\n${input.retrievalDigest.slice(0, 6000)}\n\n` +
     `Return ONLY JSON (no markdown) of the form:\n` +
-    `{"scene_brief":"…","title_hint":"<=80 chars","allowed_labels":["<=8 words each","… up to 6 items"]}\n` +
+    `{"scene_brief":"…","title_hint":"<=80 chars","allowed_labels":["<=12 words each","… up to 12 items"]}\n` +
     `Rules:\n` +
     `- The next image must be MOSTLY about the sketched subject (~70–90% of visual attention), with only light continuity from the prior page.\n` +
     `- Spell-check all words in scene_brief and allowed_labels.\n` +
-    `- Prefer photography/maps/icons; avoid dense text blocks.\n`;
+    `- allowed_labels may include headlines, captions, and map labels; balance with photography/maps/icons.\n`;
 
   try {
     const text = await geminiJsonText(instruction);
@@ -175,7 +175,7 @@ export async function compileRegionScene(input: {
         : typeof parsed.titleHint === "string"
           ? parsed.titleHint.trim()
           : "";
-    const labels = asStringArray(parsed.allowed_labels ?? parsed.allowedLabels, 6);
+    const labels = asStringArray(parsed.allowed_labels ?? parsed.allowedLabels, 12);
     if (!scene_brief) throw new Error("empty scene_brief");
     return {
       compiledQuery: buildCompiledUserQuery(scene_brief, labels, input.retrievalDigest),

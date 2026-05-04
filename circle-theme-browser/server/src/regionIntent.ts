@@ -65,7 +65,7 @@ export async function resolveRegionIntent(
       `Generate ONE new full-frame image that continues the story: zoom into, open, or reveal what that sketch targeted. ` +
       `Composition priority: about 75% of the frame should be about the sketched subject/area, and about 25% can preserve context from the previous page so continuity remains clear. ` +
       `Keep the same world and theme, modern search-style discovery, and coherent structure (not a pasted SERP collage). ` +
-      `Prefer short, legible labels only when helpful and avoid long blocks of tiny text to reduce spelling artifacts. ` +
+      `On-image text is fine (headlines, bullets, map labels, captions) when it clarifies the scene; spell carefully and keep type legible. ` +
       `No scrollbars, no nested scroll UI, no fake browser chrome around the art unless the user explicitly wanted a device screen.`,
   };
 
@@ -98,7 +98,7 @@ export async function resolveRegionIntent(
     `next_query must be self-contained and must include the same visual theme constraints; describe the new scene to synthesize (do not say "the previous image"). ` +
     `next_query must also: (1) synthesize holistically what that subject implies in context (like a rounded "top results" understanding, one coherent scene), ` +
     `(2) make the next image mostly about the sketched region (roughly 70-85% of frame focus) while retaining limited context from the prior scene (roughly 15-30%) for continuity, ` +
-    `(3) favor multiple plausible objects or regions the user could tap/sketch next, and (4) avoid heavy text density; if text appears, keep it short and legible to reduce spelling errors, ` +
+    `(3) favor multiple plausible objects or regions the user could tap/sketch next, and (4) allow readable on-image typography when helpful; spell-check proper nouns; avoid only illegible micro-type, ` +
     `and (5) forbid scrollbars, feed-scroll metaphors, and fake browser/OS framing unless the original user intent explicitly required a realistic screen.`;
 
   const res = await fetch(url, {
