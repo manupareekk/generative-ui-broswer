@@ -1,6 +1,6 @@
-# Generative UI browser
+# Generative UI search browser
 
-Turn a short prompt into a **full-screen picture**, then **draw on the image** to explore deeper—like following curiosity instead of clicking links. The main app lives in **`circle-theme-browser/`** (Node + React; optional Gemini or OpenAI for real images).
+A **search-style box** for generative UI: you type a query like a web search, get a **full-frame generated image** as the “results,” then **sketch on the picture** to open the next scene. The runnable app is **`circle-theme-browser/`** (Node + React; optional Gemini or OpenAI for real images).
 
 → **[How to run it](./circle-theme-browser/README.md)**
 

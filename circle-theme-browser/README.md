@@ -1,6 +1,6 @@
 # Circle theme browser
 
-**Generative UI browser** — a calm, search-inspired surface: one field for your full image brief, then a **single full-frame image**. Explore by **drawing a pencil sketch** on the picture to zoom or branch the next frame (region intent via vision, then another image).
+**Generative UI search browser** — one **search-style** field for your prompt, then the “page” is a **single full-frame image**. Refine by **sketching** on the picture (vision interprets the region, then a new image loads), same way you’d keep searching, but the UI stays pixels-first.
 
 Stack: **Express** API + **Vite/React** client, **Server-Sent Events** for streaming status, optional **Gemini** (image + vision) or **OpenAI Images**, otherwise **SVG stubs** when no key is set.
 
