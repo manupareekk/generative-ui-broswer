@@ -1,10 +1,10 @@
 # Generative UI Browser
 
-**Generative UI** here means something simple to say and hard to ship: **each time you commit to a next step, you get a fresh screen—generated for that moment**—instead of sliding another panel inside the same fixed layout.
+**Generative UI** (here): **each next step gets a new generated screen**, not another panel in the same chrome.
 
-This repo is a small working sketch of that idea: **search in → full image out → tap on the picture → another full image**, and so on. It’s closer to **moving through scenes** than to **clicking down a list of links**—same “look something up” habit, different material on the glass.
+This repo sketches that as **search → full image → tap the image → next full image**—more **scene-to-scene** than **link list to link list**. Same lookup habit, different surface.
 
-The runnable app lives in **`generative-ui-browser/`**.
+Code: **`generative-ui-browser/`**.
 
 ## Demo
 
