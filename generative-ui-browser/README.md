@@ -2,16 +2,15 @@
 
 ## What you’re running
 
-This folder (`circle-theme-browser` in the monorepo) is the **Generative UI Browser** app: a **single search bar** and a **full-frame image** underneath. You describe what you want to see (like you’d type a search), press go, and the “answer” isn’t a list of links—it’s **one picture** meant to carry the idea.
+This folder (`generative-ui-browser` in the monorepo) is the **Generative UI Browser** app: a **single search bar** and a **full-frame image** underneath. The pitch is **generative UI as a new screen per step**—each time you choose where to go next, you get another **full generated frame**, not another panel inside the same layout.
 
-**What’s new compared to typical generative UI?**  
-Instead of AI living *inside* classic layout components, the **page itself is the output**. To move forward, you **sketch on the image**—roughly circling or looping the part you care about—and the app asks the model to **continue from that place**. You’re navigating **through** the image, not through menus.
+You describe what you want (like a search), press go, and the “answer” isn’t a list of links—it’s **one picture**. To continue, you **tap on the image** (and optional sketch-style regions where supported); the next response is again **a whole new image**—navigation through **pixels and intent**, not through rows of URLs.
 
 So the loop is simple:
 
 1. **Ask** — Type a prompt (tone, topic, style, level of detail—whatever you’d put in a search).
 2. **See** — Get a new full-screen image built for that prompt.
-3. **Point** — Draw on the part you want to explore next; get another image that follows that thread.
+3. **Point** — Tap (or circle) the part you want to explore next; get another full-screen image that follows that thread.
 
 Under the hood it’s an **Express** API plus a **Vite + React** client, with **live updates over SSE** while images are prepared. With API keys set, it uses **Gemini** for images (and vision for your sketch); without keys you still get a **stub preview** so the UI is testable.
 
@@ -22,14 +21,14 @@ Under the hood it’s an **Express** API plus a **Vite + React** client, with **
 ## Quick start
 
 ```bash
-cd circle-theme-browser
+cd generative-ui-browser
 npm install
 cp .env.example .env
 # Edit .env: add GEMINI_API_KEY (recommended) and/or OPENAI_API_KEY — never commit .env
 npm run dev
 ```
 
-- **API:** `http://127.0.0.1:3020` (change with `CIRCLE_BROWSER_PORT` if you like)
+- **API:** `http://127.0.0.1:3020` (change with `GENERATIVE_UI_BROWSER_PORT` or legacy `CIRCLE_BROWSER_PORT` if you like)
 - **App in the browser:** Vite prints a URL (often **http://localhost:5182**); it proxies `/api` to the server above
 
 ---
@@ -83,6 +82,6 @@ Builds everything and runs `npm audit` (fails on high or critical issues).
 | `GEMINI_COMPILER_MODEL` | Default `gemini-2.0-flash` (scene “compiler” JSON step) |
 | `BRAVE_SEARCH_API_KEY` | Optional: richer retrieval than DuckDuckGo alone |
 | `RETRIEVAL_TOP_N` | Max snippets to fold into the digest (default `8`) |
-| `CIRCLE_BROWSER_PORT` | API port (default `3020`) |
+| `GENERATIVE_UI_BROWSER_PORT` | API port (default `3020`; `CIRCLE_BROWSER_PORT` still accepted) |
 
 Advanced: you can send `theme_preset` and `theme_custom` in API bodies—see `server/src/themes.ts`.

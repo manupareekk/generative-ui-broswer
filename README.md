@@ -1,24 +1,28 @@
 # Generative UI Browser
 
-**Generative UI Browser** — a search-style flow where each “page” is a full image you tap or sketch to explore. This repository hosts that project; the app you run lives in the **`circle-theme-browser/`** folder (historical path name).
+**Generative UI** here means something simple to say and hard to ship: **each time you commit to a next step, you get a fresh screen—generated for that moment**—instead of sliding another panel inside the same fixed layout.
+
+This repo is a small working sketch of that idea: **search in → full image out → tap on the picture → another full image**, and so on. It’s closer to **moving through scenes** than to **clicking down a list of links**—same “look something up” habit, different material on the glass.
+
+The runnable app lives in **`generative-ui-browser/`**.
 
 ## Demo
 
-![Generative UI Browser screen recording](circle-theme-browser/docs/demo.gif)
+![Generative UI Browser screen recording](generative-ui-browser/docs/demo.gif)
 
-Preview (~18s, silent GIF). **Full demo with audio:** [demo.mp4](./circle-theme-browser/docs/demo.mp4) — open or download from the repo.
+Preview (~18s, silent GIF). **Full demo with audio:** [demo.mp4](./generative-ui-browser/docs/demo.mp4) — open or download from the repo.
 
 ## Where this fits
 
-**Generative UI** usually still looks like a normal app: sidebars, buttons, and boxes—except some of the *content* inside those boxes is AI-generated. That’s a big step, but the **frame** of the experience is still traditional UI.
+A lot of “generative UI” today still **wears normal app chrome**: sidebars, tabs, cards—AI fills *regions* of the UI. That’s useful; the **frame** is still the old frame.
 
-This project is a small take on what often comes **next**: the **whole screen can be the generated surface**. You’re not filling a widget with text; you’re **looking at a scene** the model drew for you. Your “buttons” are **places in the picture**—you point or sketch where your attention goes, and the next screen is another full image. It feels closer to **browsing** than to **chatting**, but the browser chrome is gone: just a **search-style question** and then **pixels**.
+What’s interesting to explore next is the opposite emphasis: the **whole viewport is the output**—less “widget with smart text,” more **one coherent image per beat**. Your “controls” aren’t labeled buttons; they’re **places in the picture** you choose to follow. Each choice is a fork: **new intent → new screen**, not another hop through the same template.
 
-In short: **search in, picture out, sketch to go deeper.** Same habit as looking something up, different material than links and paragraphs.
+That’s expensive, fuzzy, and wrong sometimes—**links and lists stay unbeatable** when you need provenance, exact text, and speed. Image-native navigation is a bet on a different job: **exploration, orientation, and “show me”**—where the next thing you want is *another view*, not another paragraph.
 
-The **Generative UI Browser** implementation is a small Node + React app in **`circle-theme-browser/`** (plug in Gemini or OpenAI for real images, or run without keys to see placeholders).
+The implementation here is a **Node + React** app in **`generative-ui-browser/`** (Gemini / OpenAI when keys are set; placeholders otherwise).
 
-→ **[Install, run, and configure](./circle-theme-browser/README.md)**
+→ **[Install, run, and configure](./generative-ui-browser/README.md)**
 
 ## License
 

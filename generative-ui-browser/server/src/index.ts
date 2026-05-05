@@ -14,7 +14,12 @@ import { resolveRegionIntentRoutes } from "./regionIntent.js";
 import { retrieveSnippets, snippetsToDigest } from "./retrieveWeb.js";
 import { DEFAULT_THEME_KEY, resolveThemeBlock, THEME_PRESETS } from "./themes.js";
 
-const PORT = Number(process.env.CIRCLE_BROWSER_PORT || process.env.PORT || 3020);
+const PORT = Number(
+  process.env.GENERATIVE_UI_BROWSER_PORT?.trim() ||
+    process.env.CIRCLE_BROWSER_PORT?.trim() ||
+    process.env.PORT ||
+    3020,
+);
 
 const app = express();
 app.use(cors({ origin: true }));
