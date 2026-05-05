@@ -1,10 +1,10 @@
 # Generative UI Browser
 
-**Generative UI** (here): **each next step gets a new generated screen**, not another panel in the same chrome.
+Most apps: **fixed frame**, AI in **patches**—still mostly hunt controls and scroll pages.
 
-This repo sketches that as **search → full image → tap the image → next full image**—more **scene-to-scene** than **link list to link list**. Same lookup habit, different surface.
+**Generative UI**: **new surface per decision**—a **whole view** (layout, imagery) for the moment, not smarter chrome. Harder for models; better when you want a **felt picture**, not links.
 
-Code: **`generative-ui-browser/`**.
+**What’s here** — end-to-end **search → image → tap → next image**; retrieval, compile, image, vision; runs in **`generative-ui-browser/`** (Node + React; Gemini / OpenAI or stubs).
 
 ## Demo
 
@@ -12,15 +12,7 @@ Code: **`generative-ui-browser/`**.
 
 Preview (~18s, silent GIF). **Full demo with audio:** [demo.mp4](./generative-ui-browser/docs/demo.mp4) — open or download from the repo.
 
-## Where this fits
-
-A lot of “generative UI” today still **wears normal app chrome**: sidebars, tabs, cards—AI fills *regions* of the UI. That’s useful; the **frame** is still the old frame.
-
-What’s interesting to explore next is the opposite emphasis: the **whole viewport is the output**—less “widget with smart text,” more **one coherent image per beat**. Your “controls” aren’t labeled buttons; they’re **places in the picture** you choose to follow. Each choice is a fork: **new intent → new screen**, not another hop through the same template.
-
-That’s expensive, fuzzy, and wrong sometimes—**links and lists stay unbeatable** when you need provenance, exact text, and speed. Image-native navigation is a bet on a different job: **exploration, orientation, and “show me”**—where the next thing you want is *another view*, not another paragraph.
-
-The implementation here is a **Node + React** app in **`generative-ui-browser/`** (Gemini / OpenAI when keys are set; placeholders otherwise).
+**Tradeoff, said plainly:** link lists still win for **exact answers and provenance**. This shape shines when **“show me”** beats **“tell me in paragraphs.”**
 
 → **[Install, run, and configure](./generative-ui-browser/README.md)**
 
