@@ -2,7 +2,7 @@
 
 ## What this is
 
-A runnable experiment in **generative UI**: type a **search**, get a **full-page image**, **tap where you want to go next**, get **another full image**—**moving through the picture** instead of digging through menus or link lists. Implemented in **`generative-ui-browser/`** (Node + React). **Gemini** or **OpenAI** keys enable real images; without them you still get **stubs** so the flow is visible end-to-end.
+A runnable experiment in **generative UI**: type a **search**, get a **full-page image**, **tap where you want to go next**, get **another full image**—**moving through the picture** instead of digging through menus or link lists.
 
 ## Demo
 
@@ -28,4 +28,4 @@ This isn’t claiming to be the **final** shape of anything, but it’s **fun to
 
 ## License
 
-Add a `LICENSE` file when you’re ready to declare terms; none ships here by default.
+[MIT](./LICENSE) — Copyright (c) 2026 Manu Pareek.
